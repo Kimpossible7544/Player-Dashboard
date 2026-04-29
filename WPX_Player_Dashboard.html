@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='UTF-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<title>WPX Player Dashboard</title>
+<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>
+<style>
+:root{
+--bg:#0F0F19;
+--panel:#141423;
+--panel2:#191928;
+--deep:#0A0A14;
+--border:#28283C;
+--text:#DCDCDC;
+--muted:#B4B4C8;
+--accent:#00FFB4;
+--blue:#00B4FF;
+--purple:#B464FF;
+--gold:#FFC800;
+--orange:#FF6432;
+--pink:#FF3296;
+}
+body{margin:0;padding:24px;background:radial-gradient(circle at top,#191928 0%,#0F0F19 45%,#07070D 100%);color:var(--text);font-family:'Segoe UI',Calibri,Arial,sans-serif;}
+.page{max-width:1400px;margin:0 auto;}
+.header{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:20px;padding:16px 18px;background:linear-gradient(135deg,var(--panel),var(--deep));border-bottom:2px solid var(--accent);border-radius:18px;box-shadow:0 0 24px rgba(0,255,180,.16);}
+h1{margin:0;font-size:32px;letter-spacing:1px;color:var(--accent);font-weight:800;text-shadow:0 0 14px rgba(0,255,180,.55);}
+.sub{color:var(--muted);font-size:14px;margin-top:4px;}
+select,input{background:var(--panel2);color:var(--text);border:2px solid var(--accent);border-radius:999px;padding:10px 14px;font-size:15px;min-width:280px;font-family:'Segoe UI',Calibri,Arial,sans-serif;box-shadow:0 0 16px rgba(0,255,180,.18);outline:none;}
+select:focus,input:focus{box-shadow:0 0 22px rgba(0,255,180,.45);}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:18px;}
+.card{background:linear-gradient(180deg,var(--panel),var(--deep));border:1px solid var(--border);border-top:3px solid var(--accent);border-radius:18px;padding:16px;box-shadow:0 16px 40px rgba(0,0,0,.35);}
+.card:nth-child(2){border-top-color:var(--accent);}.card:nth-child(3){border-top-color:var(--blue);}.card:nth-child(4){border-top-color:var(--purple);}.card:nth-child(5){border-top-color:var(--gold);}.card:nth-child(6){border-top-color:var(--orange);}.card:nth-child(7){border-top-color:var(--pink);}
+.label{font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;}
+.value{font-size:25px;font-weight:800;color:var(--accent);text-shadow:0 0 10px rgba(0,255,180,.28);}
+#cardPlayer{font-family:'Informal Roman','Segoe UI',Calibri,Arial,sans-serif;font-size:30px;color:#06FFAC;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;}
+.panel{background:var(--deep);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:0 16px 40px rgba(0,0,0,.35);}
+.wide{grid-column:1 / -1;}
+.panel h2{margin:0 0 12px 0;font-size:20px;color:var(--accent);font-family:'Segoe UI',Calibri,Arial,sans-serif;text-shadow:0 0 10px rgba(0,255,180,.3);}
+.table-shell{overflow:auto;max-height:520px;background:var(--deep);border:1px solid var(--border);border-radius:18px;}
+table{border-collapse:collapse;width:100%;min-width:900px;}
+th,td{border-bottom:1px solid var(--border);padding:9px 10px;text-align:left;white-space:nowrap;}
+th{position:sticky;top:0;background:var(--panel);color:var(--accent);z-index:2;cursor:pointer;font-size:12px;text-transform:uppercase;letter-spacing:.5px;}
+td{color:var(--text);}
+tr:hover td{background:var(--panel2);color:#FFFFFF;}
+.hidden{display:none;}
+@media(max-width:900px){.grid{grid-template-columns:1fr;}body{padding:14px;}h1{font-size:25px;}}
+</style>
+</head>
+<body>
+<div class='page'>
+<div class='header'>
+<div><h1>WARRIOR PHOENIX</h1><div class='sub'>Interactive Player Dashboard · Updated: April 29, 2026 8:41 AM</div></div>
+<div><select id='playerSelect' onchange='renderDashboard()'></select></div>
+</div>
+<div class='cards'>
+<div class='card'><div class='label'>Player</div><div class='value' id='cardPlayer'>-</div></div>
+<div class='card'><div class='label'>Overall Rank</div><div class='value' id='cardRank'>-</div></div>
+<div class='card'><div class='label'>Total Score</div><div class='value' id='cardTotal'>-</div></div>
+<div class='card'><div class='label'>Weekly Avg</div><div class='value' id='cardAvg'>-</div></div>
+<div class='card'><div class='label'>Weeks Played</div><div class='value' id='cardWeeks'>-</div></div>
+<div class='card'><div class='label'>Missed Daily</div><div class='value' id='cardDailyMiss'>-</div></div>
+<div class='card'><div class='label'>Missed Weekly</div><div class='value' id='cardWeeklyMiss'>-</div></div>
+</div>
+<div class='grid' id='chartsArea'>
+<div class='panel'><h2>Weekly Score Trend</h2><canvas id='scoreChart'></canvas></div>
+<div class='panel'><h2>Weekly Rank Trend</h2><canvas id='rankChart'></canvas></div>
+<div class='panel wide'><h2>Selected Player Weekly History</h2><div class='table-shell'><table id='historyTable'></table></div></div>
+</div>
+<div class='panel' id='allPlayersPanel'>
+<h2>All Players</h2>
+<input id='searchBox' placeholder='Search all players...' oninput='filterAllPlayers()' style='margin-bottom:12px;'>
+<div class='table-shell'><table id='allPlayersTable'></table></div>
+</div>
+</div>
+<script>
+const players = [
+{
+name:"Ender",
+overallTotal:"439,853,213",
+overallRank:"2",
+weeklyAverage:"73,308,869",
+missedDaily:"0",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"16,474,469",rank:"7"},{week:"April 20 - April 25",total:"30,020,845",rank:"20"},{week:"April 13 - April 18",total:"120,005,962",rank:"3"},{week:"April 6 - April 11",total:"56,540,633",rank:"7"},{week:"March 30 - April 4",total:"98,933,300",rank:"2"},{week:"March 23 - March 28",total:"117,878,004",rank:"1"}]
+},
+{
+name:"DestinedOne",
+overallTotal:"240,585,234",
+overallRank:"14",
+weeklyAverage:"40,097,539",
+missedDaily:"6",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"16,542,163",rank:"6"},{week:"April 20 - April 25",total:"31,402,307",rank:"15"},{week:"April 13 - April 18",total:"48,349,084",rank:"17"},{week:"April 6 - April 11",total:"31,273,494",rank:"36"},{week:"March 30 - April 4",total:"66,680,135",rank:"5"},{week:"March 23 - March 28",total:"46,338,051",rank:"26"}]
+},
+{
+name:"GaurangM",
+overallTotal:"227,803,525",
+overallRank:"18",
+weeklyAverage:"37,967,254",
+missedDaily:"6",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"9,492,620",rank:"44"},{week:"April 20 - April 25",total:"29,540,158",rank:"21"},{week:"April 13 - April 18",total:"35,622,771",rank:"35"},{week:"April 6 - April 11",total:"48,534,103",rank:"8"},{week:"March 30 - April 4",total:"40,901,193",rank:"28"},{week:"March 23 - March 28",total:"63,712,680",rank:"10"}]
+},
+{
+name:"kealThus",
+overallTotal:"294,239,528",
+overallRank:"6",
+weeklyAverage:"49,039,921",
+missedDaily:"3",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"13,521,288",rank:"20"},{week:"April 20 - April 25",total:"34,846,202",rank:"6"},{week:"April 13 - April 18",total:"62,028,680",rank:"11"},{week:"April 6 - April 11",total:"47,444,008",rank:"10"},{week:"March 30 - April 4",total:"65,204,469",rank:"6"},{week:"March 23 - March 28",total:"71,194,881",rank:"8"}]
+},
+{
+name:"Kimpossible7544",
+overallTotal:"257,409,100",
+overallRank:"11",
+weeklyAverage:"42,901,517",
+missedDaily:"1",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"13,978,366",rank:"15"},{week:"April 20 - April 25",total:"39,537,036",rank:"5"},{week:"April 13 - April 18",total:"44,384,147",rank:"22"},{week:"April 6 - April 11",total:"43,128,745",rank:"15"},{week:"March 30 - April 4",total:"54,416,001",rank:"14"},{week:"March 23 - March 28",total:"61,964,805",rank:"12"}]
+},
+{
+name:"Ozzi",
+overallTotal:"273,209,268",
+overallRank:"9",
+weeklyAverage:"45,534,878",
+missedDaily:"1",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"19,608,990",rank:"2"},{week:"April 20 - April 25",total:"23,855,415",rank:"43"},{week:"April 13 - April 18",total:"63,028,769",rank:"9"},{week:"April 6 - April 11",total:"57,774,193",rank:"6"},{week:"March 30 - April 4",total:"45,656,317",rank:"23"},{week:"March 23 - March 28",total:"63,285,584",rank:"11"}]
+},
+{
+name:"SurvivorBias",
+overallTotal:"461,241,569",
+overallRank:"1",
+weeklyAverage:"76,873,595",
+missedDaily:"0",
+missedWeekly:"0",
+weeks:[{week:"April 27 - May 2",total:"20,349,778",rank:"1"},{week:"April 20 - April 25",total:"47,174,338",rank:"1"},{week:"April 13 - April 18",total:"121,405,689",rank:"2"},{week:"April 6 - April 11",total:"63,629,531",rank:"4"},{week:"March 30 - April 4",total:"101,388,372",rank:"1"},{week:"March 23 - March 28",total:"107,293,861",rank:"2"}]
+},
+{
+name:"Tha-Don",
+overallTotal:"124,096,988",
+overallRank:"56",
+weeklyAverage:"20,682,831",
+missedDaily:"19",
+missedWeekly:"2",
+weeks:[{week:"April 27 - May 2",total:"7,140,391",rank:"58"},{week:"April 20 - April 25",total:"19,224,965",rank:"53"},{week:"April 13 - April 18",total:"23,695,046",rank:"59"},{week:"April 6 - April 11",total:"24,843,360",rank:"48"},{week:"March 30 - April 4",total:"20,630,510",rank:"62"},{week:"March 23 - March 28",total:"28,562,716",rank:"50"}]
+},
+{
+name:"Valbru",
+overallTotal:"284,822,863",
+overallRank:"7",
+weeklyAverage:"47,470,477",
+missedDaily:"6",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"9,371,840",rank:"45"},{week:"April 20 - April 25",total:"44,162,128",rank:"2"},{week:"April 13 - April 18",total:"87,368,788",rank:"5"},{week:"April 6 - April 11",total:"46,886,229",rank:"11"},{week:"March 30 - April 4",total:"46,185,362",rank:"22"},{week:"March 23 - March 28",total:"50,848,516",rank:"24"}]
+},
+{
+name:"Adi500",
+overallTotal:"219,317,940",
+overallRank:"21",
+weeklyAverage:"36,552,990",
+missedDaily:"7",
+missedWeekly:"2",
+weeks:[{week:"April 27 - May 2",total:"13,229,077",rank:"23"},{week:"April 20 - April 25",total:"14,329,966",rank:"66"},{week:"April 13 - April 18",total:"48,212,975",rank:"19"},{week:"April 6 - April 11",total:"29,260,954",rank:"38"},{week:"March 30 - April 4",total:"60,234,427",rank:"9"},{week:"March 23 - March 28",total:"54,050,541",rank:"21"}]
+},
+{
+name:"AreKayPee",
+overallTotal:"219,741,664",
+overallRank:"20",
+weeklyAverage:"36,623,611",
+missedDaily:"8",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"13,638,137",rank:"19"},{week:"April 20 - April 25",total:"34,191,904",rank:"8"},{week:"April 13 - April 18",total:"31,888,262",rank:"43"},{week:"April 6 - April 11",total:"41,311,051",rank:"17"},{week:"March 30 - April 4",total:"41,597,299",rank:"27"},{week:"March 23 - March 28",total:"57,115,011",rank:"19"}]
+},
+{
+name:"Big Meech",
+overallTotal:"246,974,911",
+overallRank:"13",
+weeklyAverage:"41,162,485",
+missedDaily:"10",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"11,342,839",rank:"34"},{week:"April 20 - April 25",total:"40,564,328",rank:"3"},{week:"April 13 - April 18",total:"32,938,204",rank:"41"},{week:"April 6 - April 11",total:"70,347,434",rank:"3"},{week:"March 30 - April 4",total:"38,172,953",rank:"30"},{week:"March 23 - March 28",total:"53,609,153",rank:"22"}]
+},
+{
+name:"BravoTeam25",
+overallTotal:"171,103,154",
+overallRank:"39",
+weeklyAverage:"28,517,192",
+missedDaily:"11",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"11,986,525",rank:"31"},{week:"April 20 - April 25",total:"27,307,550",rank:"33"},{week:"April 13 - April 18",total:"41,452,570",rank:"25"},{week:"April 6 - April 11",total:"31,888,873",rank:"35"},{week:"March 30 - April 4",total:"30,188,593",rank:"47"},{week:"March 23 - March 28",total:"28,279,043",rank:"53"}]
+},
+{
+name:"CARTON-LIN",
+overallTotal:"164,324,441",
+overallRank:"44",
+weeklyAverage:"27,387,407",
+missedDaily:"14",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"9,010,533",rank:"51"},{week:"April 20 - April 25",total:"20,643,931",rank:"52"},{week:"April 13 - April 18",total:"44,391,437",rank:"21"},{week:"April 6 - April 11",total:"26,799,386",rank:"43"},{week:"March 30 - April 4",total:"32,262,833",rank:"40"},{week:"March 23 - March 28",total:"31,216,321",rank:"47"}]
+},
+{
+name:"convivial",
+overallTotal:"71,223,862",
+overallRank:"75",
+weeklyAverage:"11,870,644",
+missedDaily:"23",
+missedWeekly:"5",
+weeks:[{week:"April 27 - May 2",total:"1,862,989",rank:"86"},{week:"April 20 - April 25",total:"0",rank:"89"},{week:"April 13 - April 18",total:"14,790,056",rank:"75"},{week:"April 6 - April 11",total:"25,897,424",rank:"47"},{week:"March 30 - April 4",total:"9,856,254",rank:"79"},{week:"March 23 - March 28",total:"18,817,139",rank:"64"}]
+},
+{
+name:"COP ASHOK R3",
+overallTotal:"215,746,251",
+overallRank:"23",
+weeklyAverage:"35,957,709",
+missedDaily:"5",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"19,144,956",rank:"3"},{week:"April 20 - April 25",total:"20,707,005",rank:"51"},{week:"April 13 - April 18",total:"40,059,052",rank:"28"},{week:"April 6 - April 11",total:"37,933,551",rank:"22"},{week:"March 30 - April 4",total:"53,557,252",rank:"15"},{week:"March 23 - March 28",total:"44,344,435",rank:"29"}]
+},
+{
+name:"Crazy On Break",
+overallTotal:"336,533,906",
+overallRank:"3",
+weeklyAverage:"56,088,984",
+missedDaily:"6",
+missedWeekly:"2",
+weeks:[{week:"April 27 - May 2",total:"5,495,922",rank:"67"},{week:"April 20 - April 25",total:"14,968,467",rank:"63"},{week:"April 13 - April 18",total:"139,274,222",rank:"1"},{week:"April 6 - April 11",total:"33,170,645",rank:"28"},{week:"March 30 - April 4",total:"82,761,690",rank:"3"},{week:"March 23 - March 28",total:"60,862,960",rank:"15"}]
+},
+{
+name:"Deadwake",
+overallTotal:"248,382,602",
+overallRank:"12",
+weeklyAverage:"41,397,100",
+missedDaily:"4",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"15,006,953",rank:"12"},{week:"April 20 - April 25",total:"33,296,340",rank:"9"},{week:"April 13 - April 18",total:"60,094,075",rank:"12"},{week:"April 6 - April 11",total:"37,234,819",rank:"24"},{week:"March 30 - April 4",total:"44,358,460",rank:"24"},{week:"March 23 - March 28",total:"58,391,955",rank:"16"}]
+},
+{
+name:"edimarfem",
+overallTotal:"86,783,061",
+overallRank:"67",
+weeklyAverage:"14,463,844",
+missedDaily:"23",
+missedWeekly:"5",
+weeks:[{week:"April 27 - May 2",total:"4,125,036",rank:"75"},{week:"April 20 - April 25",total:"13,099,139",rank:"69"},{week:"April 13 - April 18",total:"15,997,938",rank:"73"},{week:"April 6 - April 11",total:"17,350,068",rank:"62"},{week:"March 30 - April 4",total:"16,111,763",rank:"67"},{week:"March 23 - March 28",total:"20,099,117",rank:"62"}]
+},
+{
+name:"fantasmah",
+overallTotal:"4,099,619",
+overallRank:"94",
+weeklyAverage:"2,049,810",
+missedDaily:"4",
+missedWeekly:"2",
+weeks:[{week:"April 27 - May 2",total:"2,497,303",rank:"85"},{week:"April 20 - April 25",total:"1,602,316",rank:"88"},{week:"April 13 - April 18",total:"",rank:""},{week:"April 6 - April 11",total:"",rank:""},{week:"March 30 - April 4",total:"",rank:""},{week:"March 23 - March 28",total:"",rank:""}]
+},
+{
+name:"FernaLS",
+overallTotal:"72,673,544",
+overallRank:"73",
+weeklyAverage:"12,112,257",
+missedDaily:"23",
+missedWeekly:"5",
+weeks:[{week:"April 27 - May 2",total:"4,363,244",rank:"73"},{week:"April 20 - April 25",total:"4,556,026",rank:"83"},{week:"April 13 - April 18",total:"21,252,175",rank:"63"},{week:"April 6 - April 11",total:"13,070,341",rank:"68"},{week:"March 30 - April 4",total:"14,267,949",rank:"71"},{week:"March 23 - March 28",total:"15,163,809",rank:"71"}]
+},
+{
+name:"HellBOY",
+overallTotal:"314,250,657",
+overallRank:"5",
+weeklyAverage:"52,375,110",
+missedDaily:"1",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"12,572,014",rank:"26"},{week:"April 20 - April 25",total:"29,113,737",rank:"23"},{week:"April 13 - April 18",total:"62,502,756",rank:"10"},{week:"April 6 - April 11",total:"58,051,988",rank:"5"},{week:"March 30 - April 4",total:"57,903,212",rank:"12"},{week:"March 23 - March 28",total:"94,106,950",rank:"3"}]
+},
+{
+name:"Hnakai",
+overallTotal:"227,710,380",
+overallRank:"19",
+weeklyAverage:"37,951,730",
+missedDaily:"7",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"16,042,533",rank:"8"},{week:"April 20 - April 25",total:"31,500,173",rank:"14"},{week:"April 13 - April 18",total:"41,182,189",rank:"26"},{week:"April 6 - April 11",total:"44,239,600",rank:"14"},{week:"March 30 - April 4",total:"37,623,191",rank:"32"},{week:"March 23 - March 28",total:"57,122,694",rank:"18"}]
+},
+{
+name:"indiasapu",
+overallTotal:"165,075,240",
+overallRank:"43",
+weeklyAverage:"27,512,540",
+missedDaily:"12",
+missedWeekly:"3",
+weeks:[{week:"April 27 - May 2",total:"12,493,272",rank:"27"},{week:"April 20 - April 25",total:"28,204,709",rank:"27"},{week:"April 13 - April 18",total:"11,272,003",rank:"81"},{week:"April 6 - April 11",total:"8,755,494",rank:"75"},{week:"March 30 - April 4",total:"43,040,555",rank:"25"},{week:"March 23 - March 28",total:"61,309,207",rank:"14"}]
+},
+{
+name:"Jbzscrews",
+overallTotal:"175,924,346",
+overallRank:"37",
+weeklyAverage:"29,320,724",
+missedDaily:"12",
+missedWeekly:"3",
+weeks:[{week:"April 27 - May 2",total:"5,062,588",rank:"71"},{week:"April 20 - April 25",total:"8,900,545",rank:"79"},{week:"April 13 - April 18",total:"38,249,115",rank:"30"},{week:"April 6 - April 11",total:"7,571,717",rank:"77"},{week:"March 30 - April 4",total:"46,563,755",rank:"21"},{week:"March 23 - March 28",total:"69,576,626",rank:"9"}]
+},
+{
+name:"Lunacat",
+overallTotal:"232,315,620",
+overallRank:"17",
+weeklyAverage:"38,719,270",
+missedDaily:"8",
+missedWeekly:"2",
+weeks:[{week:"April 27 - May 2",total:"13,707,063",rank:"18"},{week:"April 20 - April 25",total:"32,971,752",rank:"10"},{week:"April 13 - April 18",total:"19,950,752",rank:"66"},{week:"April 6 - April 11",total:"75,448,385",rank:"2"},{week:"March 30 - April 4",total:"58,126,928",rank:"11"},{week:"March 23 - March 28",total:"32,110,740",rank:"45"}]
+},
+{
+name:"Lisa",
+overallTotal:"189,549,224",
+overallRank:"30",
+weeklyAverage:"31,591,537",
+missedDaily:"13",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"13,935,466",rank:"16"},{week:"April 20 - April 25",total:"39,895,543",rank:"4"},{week:"April 13 - April 18",total:"39,846,485",rank:"29"},{week:"April 6 - April 11",total:"48,499,605",rank:"9"},{week:"March 30 - April 4",total:"22,560,555",rank:"59"},{week:"March 23 - March 28",total:"24,811,570",rank:"57"}]
+},
+{
+name:"LeleXX85",
+overallTotal:"152,742,609",
+overallRank:"50",
+weeklyAverage:"25,457,102",
+missedDaily:"11",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"14,898,353",rank:"13"},{week:"April 20 - April 25",total:"25,081,108",rank:"36"},{week:"April 13 - April 18",total:"23,331,111",rank:"60"},{week:"April 6 - April 11",total:"35,650,562",rank:"25"},{week:"March 30 - April 4",total:"31,455,718",rank:"44"},{week:"March 23 - March 28",total:"22,325,757",rank:"58"}]
+},
+{
+name:"M-D",
+overallTotal:"174,583,052",
+overallRank:"38",
+weeklyAverage:"29,097,175",
+missedDaily:"10",
+missedWeekly:"3",
+weeks:[{week:"April 27 - May 2",total:"8,228,445",rank:"56"},{week:"April 20 - April 25",total:"18,369,675",rank:"57"},{week:"April 13 - April 18",total:"51,182,540",rank:"16"},{week:"April 6 - April 11",total:"17,352,977",rank:"61"},{week:"March 30 - April 4",total:"33,412,395",rank:"39"},{week:"March 23 - March 28",total:"46,037,020",rank:"27"}]
+},
+{
+name:"Mekk9",
+overallTotal:"335,857,336",
+overallRank:"4",
+weeklyAverage:"55,976,223",
+missedDaily:"2",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"10,900,610",rank:"36"},{week:"April 20 - April 25",total:"30,067,557",rank:"18"},{week:"April 13 - April 18",total:"64,593,230",rank:"8"},{week:"April 6 - April 11",total:"81,013,989",rank:"1"},{week:"March 30 - April 4",total:"56,549,071",rank:"13"},{week:"March 23 - March 28",total:"92,732,879",rank:"4"}]
+},
+{
+name:"Meowwe",
+overallTotal:"5,796,919",
+overallRank:"93",
+weeklyAverage:"966,153",
+missedDaily:"27",
+missedWeekly:"6",
+weeks:[{week:"April 27 - May 2",total:"0",rank:"89"},{week:"April 20 - April 25",total:"0",rank:"89"},{week:"April 13 - April 18",total:"2,507,834",rank:"89"},{week:"April 6 - April 11",total:"0",rank:"86"},{week:"March 30 - April 4",total:"2,796,919",rank:"86"},{week:"March 23 - March 28",total:"492,166",rank:"83"}]
+},
+{
+name:"Metalhead",
+overallTotal:"261,431,083",
+overallRank:"10",
+weeklyAverage:"43,571,847",
+missedDaily:"3",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"12,417,548",rank:"29"},{week:"April 20 - April 25",total:"27,677,981",rank:"30"},{week:"April 13 - April 18",total:"69,469,804",rank:"6"},{week:"April 6 - April 11",total:"39,925,399",rank:"18"},{week:"March 30 - April 4",total:"58,519,590",rank:"10"},{week:"March 23 - March 28",total:"53,420,761",rank:"23"}]
+},
+{
+name:"MyHitMyWay",
+overallTotal:"191,402,505",
+overallRank:"29",
+weeklyAverage:"31,900,418",
+missedDaily:"15",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"17,419,968",rank:"5"},{week:"April 20 - April 25",total:"25,948,565",rank:"35"},{week:"April 13 - April 18",total:"36,613,474",rank:"32"},{week:"April 6 - April 11",total:"35,508,534",rank:"26"},{week:"March 30 - April 4",total:"47,002,307",rank:"20"},{week:"March 23 - March 28",total:"28,909,657",rank:"49"}]
+},
+{
+name:"NoOneIsThere",
+overallTotal:"83,647,993",
+overallRank:"70",
+weeklyAverage:"27,882,664",
+missedDaily:"9",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"",rank:""},{week:"April 20 - April 25",total:"",rank:""},{week:"April 13 - April 18",total:"21,484,779",rank:"61"},{week:"April 6 - April 11",total:"11,946,553",rank:"71"},{week:"March 30 - April 4",total:"50,216,661",rank:"16"},{week:"March 23 - March 28",total:"",rank:""}]
+},
+{
+name:"Ooppss",
+overallTotal:"232,551,847",
+overallRank:"16",
+weeklyAverage:"38,758,641",
+missedDaily:"7",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"6,315,339",rank:"62"},{week:"April 20 - April 25",total:"24,602,065",rank:"39"},{week:"April 13 - April 18",total:"64,763,568",rank:"7"},{week:"April 6 - April 11",total:"32,554,437",rank:"34"},{week:"March 30 - April 4",total:"47,763,680",rank:"17"},{week:"March 23 - March 28",total:"56,552,758",rank:"20"}]
+},
+{
+name:"RedDawn2110",
+overallTotal:"195,186,953",
+overallRank:"27",
+weeklyAverage:"32,531,159",
+missedDaily:"14",
+missedWeekly:"2",
+weeks:[{week:"April 27 - May 2",total:"7,089,469",rank:"59"},{week:"April 20 - April 25",total:"17,719,392",rank:"59"},{week:"April 13 - April 18",total:"51,528,926",rank:"15"},{week:"April 6 - April 11",total:"25,995,801",rank:"46"},{week:"March 30 - April 4",total:"34,898,381",rank:"36"},{week:"March 23 - March 28",total:"57,954,984",rank:"17"}]
+},
+{
+name:"Rushu19",
+overallTotal:"158,452,193",
+overallRank:"49",
+weeklyAverage:"26,408,699",
+missedDaily:"12",
+missedWeekly:"2",
+weeks:[{week:"April 27 - May 2",total:"9,505,488",rank:"43"},{week:"April 20 - April 25",total:"18,271,336",rank:"58"},{week:"April 13 - April 18",total:"42,623,393",rank:"23"},{week:"April 6 - April 11",total:"22,960,444",rank:"52"},{week:"March 30 - April 4",total:"29,715,349",rank:"49"},{week:"March 23 - March 28",total:"35,376,183",rank:"38"}]
+},
+{
+name:"Slap-mlt-can",
+overallTotal:"122,481,001",
+overallRank:"59",
+weeklyAverage:"20,413,500",
+missedDaily:"21",
+missedWeekly:"4",
+weeks:[{week:"April 27 - May 2",total:"8,097,386",rank:"57"},{week:"April 20 - April 25",total:"16,550,218",rank:"61"},{week:"April 13 - April 18",total:"16,099,653",rank:"72"},{week:"April 6 - April 11",total:"13,994,236",rank:"65"},{week:"March 30 - April 4",total:"33,764,932",rank:"38"},{week:"March 23 - March 28",total:"33,974,576",rank:"41"}]
+},
+{
+name:"Smokie boi",
+overallTotal:"233,938,410",
+overallRank:"15",
+weeklyAverage:"38,989,735",
+missedDaily:"3",
+missedWeekly:"2",
+weeks:[{week:"April 27 - May 2",total:"15,104,801",rank:"11"},{week:"April 20 - April 25",total:"28,712,415",rank:"24"},{week:"April 13 - April 18",total:"41,082,556",rank:"27"},{week:"April 6 - April 11",total:"2,218,725",rank:"84"},{week:"March 30 - April 4",total:"64,804,429",rank:"7"},{week:"March 23 - March 28",total:"82,015,484",rank:"5"}]
+},
+{
+name:"Storm-Batey",
+overallTotal:"135,267,421",
+overallRank:"55",
+weeklyAverage:"22,544,570",
+missedDaily:"17",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"9,710,102",rank:"41"},{week:"April 20 - April 25",total:"28,541,958",rank:"26"},{week:"April 13 - April 18",total:"20,087,928",rank:"65"},{week:"April 6 - April 11",total:"20,645,713",rank:"55"},{week:"March 30 - April 4",total:"27,871,674",rank:"51"},{week:"March 23 - March 28",total:"28,410,046",rank:"51"}]
+},
+{
+name:"THE LEGEND",
+overallTotal:"274,346,900",
+overallRank:"8",
+weeklyAverage:"45,724,483",
+missedDaily:"11",
+missedWeekly:"2",
+weeks:[{week:"April 27 - May 2",total:"5,739,297",rank:"65"},{week:"April 20 - April 25",total:"5,119,878",rank:"82"},{week:"April 13 - April 18",total:"95,394,172",rank:"4"},{week:"April 6 - April 11",total:"26,518,796",rank:"45"},{week:"March 30 - April 4",total:"63,845,742",rank:"8"},{week:"March 23 - March 28",total:"77,729,015",rank:"6"}]
+},
+{
+name:"theKD",
+overallTotal:"186,251,014",
+overallRank:"32",
+weeklyAverage:"31,041,836",
+missedDaily:"7",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"13,072,471",rank:"24"},{week:"April 20 - April 25",total:"30,692,938",rank:"17"},{week:"April 13 - April 18",total:"28,505,483",rank:"52"},{week:"April 6 - April 11",total:"29,397,678",rank:"37"},{week:"March 30 - April 4",total:"38,138,710",rank:"31"},{week:"March 23 - March 28",total:"46,443,734",rank:"25"}]
+},
+{
+name:"Turtley22",
+overallTotal:"73,389,095",
+overallRank:"72",
+weeklyAverage:"12,231,516",
+missedDaily:"26",
+missedWeekly:"6",
+weeks:[{week:"April 27 - May 2",total:"6,787,073",rank:"60"},{week:"April 20 - April 25",total:"13,368,715",rank:"68"},{week:"April 13 - April 18",total:"12,355,270",rank:"77"},{week:"April 6 - April 11",total:"11,795,743",rank:"72"},{week:"March 30 - April 4",total:"12,527,192",rank:"76"},{week:"March 23 - March 28",total:"16,555,102",rank:"67"}]
+},
+{
+name:"Vio",
+overallTotal:"193,677,583",
+overallRank:"28",
+weeklyAverage:"32,279,597",
+missedDaily:"9",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"15,586,681",rank:"10"},{week:"April 20 - April 25",total:"27,752,745",rank:"29"},{week:"April 13 - April 18",total:"58,531,584",rank:"14"},{week:"April 6 - April 11",total:"37,569,609",rank:"23"},{week:"March 30 - April 4",total:"26,784,898",rank:"53"},{week:"March 23 - March 28",total:"27,452,066",rank:"55"}]
+},
+{
+name:"Webb91",
+overallTotal:"162,649,036",
+overallRank:"46",
+weeklyAverage:"27,108,173",
+missedDaily:"13",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"8,867,600",rank:"53"},{week:"April 20 - April 25",total:"27,198,370",rank:"34"},{week:"April 13 - April 18",total:"27,025,457",rank:"55"},{week:"April 6 - April 11",total:"33,063,855",rank:"30"},{week:"March 30 - April 4",total:"26,050,774",rank:"54"},{week:"March 23 - March 28",total:"40,442,980",rank:"33"}]
+},
+{
+name:"XPmatrix",
+overallTotal:"181,688,109",
+overallRank:"35",
+weeklyAverage:"30,281,352",
+missedDaily:"13",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"13,300,631",rank:"22"},{week:"April 20 - April 25",total:"32,142,100",rank:"11"},{week:"April 13 - April 18",total:"33,570,889",rank:"40"},{week:"April 6 - April 11",total:"32,987,507",rank:"31"},{week:"March 30 - April 4",total:"31,755,066",rank:"42"},{week:"March 23 - March 28",total:"37,931,916",rank:"35"}]
+},
+{
+name:"ACoolNickName",
+overallTotal:"181,717,719",
+overallRank:"34",
+weeklyAverage:"30,286,287",
+missedDaily:"8",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"14,426,078",rank:"14"},{week:"April 20 - April 25",total:"34,824,554",rank:"7"},{week:"April 13 - April 18",total:"28,236,853",rank:"53"},{week:"April 6 - April 11",total:"28,780,702",rank:"39"},{week:"March 30 - April 4",total:"47,227,229",rank:"19"},{week:"March 23 - March 28",total:"28,222,303",rank:"54"}]
+},
+{
+name:"Addisssss",
+overallTotal:"146,747,178",
+overallRank:"51",
+weeklyAverage:"24,457,863",
+missedDaily:"17",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"11,904,886",rank:"32"},{week:"April 20 - April 25",total:"23,190,874",rank:"44"},{week:"April 13 - April 18",total:"29,146,407",rank:"50"},{week:"April 6 - April 11",total:"28,684,562",rank:"40"},{week:"March 30 - April 4",total:"25,448,922",rank:"56"},{week:"March 23 - March 28",total:"28,371,527",rank:"52"}]
+},
+{
+name:"Ashmit Odisha",
+overallTotal:"202,505,317",
+overallRank:"24",
+weeklyAverage:"33,750,886",
+missedDaily:"10",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"11,095,762",rank:"35"},{week:"April 20 - April 25",total:"28,031,868",rank:"28"},{week:"April 13 - April 18",total:"33,681,697",rank:"39"},{week:"April 6 - April 11",total:"32,801,125",rank:"33"},{week:"March 30 - April 4",total:"35,406,562",rank:"35"},{week:"March 23 - March 28",total:"61,488,303",rank:"13"}]
+},
+{
+name:"Balkan",
+overallTotal:"159,500,732",
+overallRank:"48",
+weeklyAverage:"26,583,455",
+missedDaily:"15",
+missedWeekly:"2",
+weeks:[{week:"April 27 - May 2",total:"10,689,356",rank:"38"},{week:"April 20 - April 25",total:"18,794,268",rank:"55"},{week:"April 13 - April 18",total:"37,581,041",rank:"31"},{week:"April 6 - April 11",total:"24,283,792",rank:"51"},{week:"March 30 - April 4",total:"31,464,686",rank:"43"},{week:"March 23 - March 28",total:"36,687,589",rank:"36"}]
+},
+{
+name:"beterano",
+overallTotal:"162,551,808",
+overallRank:"47",
+weeklyAverage:"27,091,968",
+missedDaily:"12",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"15,864,634",rank:"9"},{week:"April 20 - April 25",total:"24,874,717",rank:"38"},{week:"April 13 - April 18",total:"31,675,907",rank:"45"},{week:"April 6 - April 11",total:"32,936,104",rank:"32"},{week:"March 30 - April 4",total:"23,607,057",rank:"57"},{week:"March 23 - March 28",total:"33,593,389",rank:"42"}]
+},
+{
+name:"biiee",
+overallTotal:"136,078,899",
+overallRank:"53",
+weeklyAverage:"22,679,817",
+missedDaily:"15",
+missedWeekly:"2",
+weeks:[{week:"April 27 - May 2",total:"8,992,977",rank:"52"},{week:"April 20 - April 25",total:"23,965,237",rank:"42"},{week:"April 13 - April 18",total:"23,855,381",rank:"58"},{week:"April 6 - April 11",total:"19,203,332",rank:"57"},{week:"March 30 - April 4",total:"30,689,979",rank:"46"},{week:"March 23 - March 28",total:"29,371,993",rank:"48"}]
+},
+{
+name:"Blaque",
+overallTotal:"76,284,429",
+overallRank:"71",
+weeklyAverage:"12,714,072",
+missedDaily:"24",
+missedWeekly:"4",
+weeks:[{week:"April 27 - May 2",total:"3,484,435",rank:"79"},{week:"April 20 - April 25",total:"6,932,424",rank:"81"},{week:"April 13 - April 18",total:"35,801,732",rank:"34"},{week:"April 6 - April 11",total:"1,548,723",rank:"85"},{week:"March 30 - April 4",total:"22,902,435",rank:"58"},{week:"March 23 - March 28",total:"5,614,680",rank:"80"}]
+},
+{
+name:"Brommex",
+overallTotal:"21,077,144",
+overallRank:"90",
+weeklyAverage:"3,512,857",
+missedDaily:"27",
+missedWeekly:"6",
+weeks:[{week:"April 27 - May 2",total:"0",rank:"89"},{week:"April 20 - April 25",total:"0",rank:"89"},{week:"April 13 - April 18",total:"0",rank:"91"},{week:"April 6 - April 11",total:"0",rank:"86"},{week:"March 30 - April 4",total:"10,187,588",rank:"78"},{week:"March 23 - March 28",total:"10,889,556",rank:"77"}]
+},
+{
+name:"CarlosMLG",
+overallTotal:"55,012,793",
+overallRank:"82",
+weeklyAverage:"9,168,799",
+missedDaily:"26",
+missedWeekly:"6",
+weeks:[{week:"April 27 - May 2",total:"3,879,675",rank:"78"},{week:"April 20 - April 25",total:"12,759,088",rank:"70"},{week:"April 13 - April 18",total:"7,626,511",rank:"84"},{week:"April 6 - April 11",total:"7,231,408",rank:"78"},{week:"March 30 - April 4",total:"12,543,277",rank:"75"},{week:"March 23 - March 28",total:"10,972,834",rank:"75"}]
+},
+{
+name:"Cgable",
+overallTotal:"18,979,425",
+overallRank:"91",
+weeklyAverage:"3,163,238",
+missedDaily:"27",
+missedWeekly:"6",
+weeks:[{week:"April 27 - May 2",total:"726,500",rank:"88"},{week:"April 20 - April 25",total:"3,264,357",rank:"86"},{week:"April 13 - April 18",total:"2,486,526",rank:"90"},{week:"April 6 - April 11",total:"3,187,404",rank:"83"},{week:"March 30 - April 4",total:"5,107,925",rank:"85"},{week:"March 23 - March 28",total:"4,206,713",rank:"81"}]
+},
+{
+name:"Chotta Hellboy",
+overallTotal:"54,912,338",
+overallRank:"83",
+weeklyAverage:"18,304,113",
+missedDaily:"5",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"10,516,245",rank:"39"},{week:"April 20 - April 25",total:"24,059,448",rank:"41"},{week:"April 13 - April 18",total:"20,336,645",rank:"64"},{week:"April 6 - April 11",total:"",rank:""},{week:"March 30 - April 4",total:"",rank:""},{week:"March 23 - March 28",total:"",rank:""}]
+},
+{
+name:"Chuck Woolery",
+overallTotal:"47,350,845",
+overallRank:"84",
+weeklyAverage:"7,891,808",
+missedDaily:"26",
+missedWeekly:"6",
+weeks:[{week:"April 27 - May 2",total:"2,929,934",rank:"82"},{week:"April 20 - April 25",total:"4,451,762",rank:"84"},{week:"April 13 - April 18",total:"12,422,712",rank:"76"},{week:"April 6 - April 11",total:"6,102,577",rank:"79"},{week:"March 30 - April 4",total:"11,785,203",rank:"77"},{week:"March 23 - March 28",total:"9,658,657",rank:"78"}]
+},
+{
+name:"Daani",
+overallTotal:"57,067,275",
+overallRank:"81",
+weeklyAverage:"9,511,213",
+missedDaily:"25",
+missedWeekly:"6",
+weeks:[{week:"April 27 - May 2",total:"3,881,145",rank:"77"},{week:"April 20 - April 25",total:"11,639,303",rank:"72"},{week:"April 13 - April 18",total:"11,363,485",rank:"79"},{week:"April 6 - April 11",total:"12,899,564",rank:"69"},{week:"March 30 - April 4",total:"6,362,918",rank:"82"},{week:"March 23 - March 28",total:"10,920,860",rank:"76"}]
+},
+{
+name:"GKPHyInd",
+overallTotal:"196,653,486",
+overallRank:"26",
+weeklyAverage:"32,775,581",
+missedDaily:"7",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"13,897,468",rank:"17"},{week:"April 20 - April 25",total:"27,505,288",rank:"32"},{week:"April 13 - April 18",total:"31,699,992",rank:"44"},{week:"April 6 - April 11",total:"41,692,603",rank:"16"},{week:"March 30 - April 4",total:"47,381,014",rank:"18"},{week:"March 23 - March 28",total:"34,477,121",rank:"40"}]
+},
+{
+name:"go0ns",
+overallTotal:"135,893,949",
+overallRank:"54",
+weeklyAverage:"33,973,487",
+missedDaily:"7",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"8,366,148",rank:"55"},{week:"April 20 - April 25",total:"29,375,358",rank:"22"},{week:"April 13 - April 18",total:"59,173,876",rank:"13"},{week:"April 6 - April 11",total:"38,978,567",rank:"20"},{week:"March 30 - April 4",total:"",rank:""},{week:"March 23 - March 28",total:"",rank:""}]
+},
+{
+name:"HulaGrafix",
+overallTotal:"122,839,795",
+overallRank:"58",
+weeklyAverage:"20,473,299",
+missedDaily:"18",
+missedWeekly:"2",
+weeks:[{week:"April 27 - May 2",total:"9,069,461",rank:"50"},{week:"April 20 - April 25",total:"24,886,959",rank:"37"},{week:"April 13 - April 18",total:"24,718,079",rank:"57"},{week:"April 6 - April 11",total:"26,766,361",rank:"44"},{week:"March 30 - April 4",total:"15,953,938",rank:"68"},{week:"March 23 - March 28",total:"21,444,997",rank:"59"}]
+},
+{
+name:"HURSTBRO",
+overallTotal:"121,109,294",
+overallRank:"60",
+weeklyAverage:"20,184,882",
+missedDaily:"20",
+missedWeekly:"4",
+weeks:[{week:"April 27 - May 2",total:"6,173,793",rank:"63"},{week:"April 20 - April 25",total:"18,610,825",rank:"56"},{week:"April 13 - April 18",total:"18,137,351",rank:"70"},{week:"April 6 - April 11",total:"14,378,333",rank:"64"},{week:"March 30 - April 4",total:"22,378,720",rank:"60"},{week:"March 23 - March 28",total:"41,430,272",rank:"32"}]
+},
+{
+name:"IJAG",
+overallTotal:"216,810,833",
+overallRank:"22",
+weeklyAverage:"36,135,139",
+missedDaily:"12",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"6,685,683",rank:"61"},{week:"April 20 - April 25",total:"21,278,923",rank:"49"},{week:"April 13 - April 18",total:"45,242,942",rank:"20"},{week:"April 6 - April 11",total:"27,753,752",rank:"41"},{week:"March 30 - April 4",total:"39,180,539",rank:"29"},{week:"March 23 - March 28",total:"76,668,994",rank:"7"}]
+},
+{
+name:"Jackal $0 F2P",
+overallTotal:"163,908,504",
+overallRank:"45",
+weeklyAverage:"27,318,084",
+missedDaily:"8",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"11,784,214",rank:"33"},{week:"April 20 - April 25",total:"23,103,144",rank:"46"},{week:"April 13 - April 18",total:"30,936,654",rank:"47"},{week:"April 6 - April 11",total:"35,336,730",rank:"27"},{week:"March 30 - April 4",total:"27,413,043",rank:"52"},{week:"March 23 - March 28",total:"35,334,719",rank:"39"}]
+},
+{
+name:"Jäckal $0 F2P.2",
+overallTotal:"169,667,320",
+overallRank:"41",
+weeklyAverage:"28,277,887",
+missedDaily:"7",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"9,241,105",rank:"47"},{week:"April 20 - April 25",total:"22,331,756",rank:"47"},{week:"April 13 - April 18",total:"30,647,543",rank:"48"},{week:"April 6 - April 11",total:"46,060,868",rank:"12"},{week:"March 30 - April 4",total:"29,913,121",rank:"48"},{week:"March 23 - March 28",total:"31,472,927",rank:"46"}]
+},
+{
+name:"Josh 007",
+overallTotal:"200,714,326",
+overallRank:"25",
+weeklyAverage:"33,452,388",
+missedDaily:"9",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"17,929,843",rank:"4"},{week:"April 20 - April 25",total:"31,228,101",rank:"16"},{week:"April 13 - April 18",total:"42,491,058",rank:"24"},{week:"April 6 - April 11",total:"38,456,518",rank:"21"},{week:"March 30 - April 4",total:"28,452,055",rank:"50"},{week:"March 23 - March 28",total:"42,156,751",rank:"31"}]
+},
+{
+name:"Knull is back",
+overallTotal:"88,692,443",
+overallRank:"65",
+weeklyAverage:"14,782,074",
+missedDaily:"22",
+missedWeekly:"5",
+weeks:[{week:"April 27 - May 2",total:"3,005,893",rank:"81"},{week:"April 20 - April 25",total:"14,190,485",rank:"67"},{week:"April 13 - April 18",total:"25,357,197",rank:"56"},{week:"April 6 - April 11",total:"13,677,159",rank:"66"},{week:"March 30 - April 4",total:"16,252,669",rank:"65"},{week:"March 23 - March 28",total:"16,209,040",rank:"70"}]
+},
+{
+name:"lion cute",
+overallTotal:"176,034,817",
+overallRank:"36",
+weeklyAverage:"29,339,136",
+missedDaily:"14",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"10,864,946",rank:"37"},{week:"April 20 - April 25",total:"24,324,062",rank:"40"},{week:"April 13 - April 18",total:"28,784,874",rank:"51"},{week:"April 6 - April 11",total:"45,548,630",rank:"13"},{week:"March 30 - April 4",total:"41,625,325",rank:"26"},{week:"March 23 - March 28",total:"24,886,980",rank:"56"}]
+},
+{
+name:"LittleOmig",
+overallTotal:"170,258,788",
+overallRank:"40",
+weeklyAverage:"28,376,465",
+missedDaily:"10",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"13,332,324",rank:"21"},{week:"April 20 - April 25",total:"28,582,804",rank:"25"},{week:"April 13 - April 18",total:"35,875,629",rank:"33"},{week:"April 6 - April 11",total:"24,480,338",rank:"50"},{week:"March 30 - April 4",total:"32,079,963",rank:"41"},{week:"March 23 - March 28",total:"35,907,730",rank:"37"}]
+},
+{
+name:"LoverGuy",
+overallTotal:"61,582,978",
+overallRank:"79",
+weeklyAverage:"12,316,596",
+missedDaily:"20",
+missedWeekly:"5",
+weeks:[{week:"April 27 - May 2",total:"9,133,865",rank:"49"},{week:"April 20 - April 25",total:"",rank:""},{week:"April 13 - April 18",total:"11,718,222",rank:"78"},{week:"April 6 - April 11",total:"9,264,354",rank:"74"},{week:"March 30 - April 4",total:"14,290,067",rank:"70"},{week:"March 23 - March 28",total:"17,176,470",rank:"66"}]
+},
+{
+name:"Matys",
+overallTotal:"26,753,792",
+overallRank:"88",
+weeklyAverage:"4,458,965",
+missedDaily:"27",
+missedWeekly:"6",
+weeks:[{week:"April 27 - May 2",total:"3,090,477",rank:"80"},{week:"April 20 - April 25",total:"3,244,197",rank:"87"},{week:"April 13 - April 18",total:"2,659,406",rank:"88"},{week:"April 6 - April 11",total:"4,988,473",rank:"80"},{week:"March 30 - April 4",total:"9,234,866",rank:"80"},{week:"March 23 - March 28",total:"3,536,373",rank:"82"}]
+},
+{
+name:"Mervyn",
+overallTotal:"99,361,506",
+overallRank:"64",
+weeklyAverage:"16,560,251",
+missedDaily:"24",
+missedWeekly:"4",
+weeks:[{week:"April 27 - May 2",total:"5,138,723",rank:"69"},{week:"April 20 - April 25",total:"10,211,919",rank:"75"},{week:"April 13 - April 18",total:"32,145,362",rank:"42"},{week:"April 6 - April 11",total:"17,723,082",rank:"60"},{week:"March 30 - April 4",total:"20,312,854",rank:"63"},{week:"March 23 - March 28",total:"13,829,566",rank:"73"}]
+},
+{
+name:"misswiz",
+overallTotal:"114,541,536",
+overallRank:"62",
+weeklyAverage:"28,635,384",
+missedDaily:"8",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"9,250,421",rank:"46"},{week:"April 20 - April 25",total:"30,057,635",rank:"19"},{week:"April 13 - April 18",total:"48,347,987",rank:"18"},{week:"April 6 - April 11",total:"26,885,493",rank:"42"},{week:"March 30 - April 4",total:"",rank:""},{week:"March 23 - March 28",total:"",rank:""}]
+},
+{
+name:"Pabloaob",
+overallTotal:"63,882,328",
+overallRank:"76",
+weeklyAverage:"10,647,055",
+missedDaily:"26",
+missedWeekly:"5",
+weeks:[{week:"April 27 - May 2",total:"4,432,939",rank:"72"},{week:"April 20 - April 25",total:"11,207,857",rank:"73"},{week:"April 13 - April 18",total:"6,859,406",rank:"85"},{week:"April 6 - April 11",total:"24,723,050",rank:"49"},{week:"March 30 - April 4",total:"5,343,606",rank:"83"},{week:"March 23 - March 28",total:"11,315,470",rank:"74"}]
+},
+{
+name:"Rex Odie",
+overallTotal:"86,373,708",
+overallRank:"68",
+weeklyAverage:"14,395,618",
+missedDaily:"21",
+missedWeekly:"4",
+weeks:[{week:"April 27 - May 2",total:"5,107,416",rank:"70"},{week:"April 20 - April 25",total:"21,412,907",rank:"48"},{week:"April 13 - April 18",total:"29,492,909",rank:"49"},{week:"April 6 - April 11",total:"18,963,682",rank:"59"},{week:"March 30 - April 4",total:"5,222,706",rank:"84"},{week:"March 23 - March 28",total:"6,174,088",rank:"79"}]
+},
+{
+name:"RyanD",
+overallTotal:"187,652,345",
+overallRank:"31",
+weeklyAverage:"31,275,391",
+missedDaily:"11",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"9,543,305",rank:"42"},{week:"April 20 - April 25",total:"27,625,701",rank:"31"},{week:"April 13 - April 18",total:"34,866,616",rank:"38"},{week:"April 6 - April 11",total:"39,785,179",rank:"19"},{week:"March 30 - April 4",total:"35,490,817",rank:"34"},{week:"March 23 - March 28",total:"40,340,727",rank:"34"}]
+},
+{
+name:"Sweetgum Matt",
+overallTotal:"137,736,623",
+overallRank:"52",
+weeklyAverage:"22,956,104",
+missedDaily:"21",
+missedWeekly:"3",
+weeks:[{week:"April 27 - May 2",total:"5,494,690",rank:"68"},{week:"April 20 - April 25",total:"11,773,219",rank:"71"},{week:"April 13 - April 18",total:"31,003,664",rank:"46"},{week:"April 6 - April 11",total:"19,084,714",rank:"58"},{week:"March 30 - April 4",total:"25,526,769",rank:"55"},{week:"March 23 - March 28",total:"44,853,567",rank:"28"}]
+},
+{
+name:"Youknownothing",
+overallTotal:"61,970,472",
+overallRank:"77",
+weeklyAverage:"10,328,412",
+missedDaily:"21",
+missedWeekly:"6",
+weeks:[{week:"April 27 - May 2",total:"0",rank:"89"},{week:"April 20 - April 25",total:"9,093,345",rank:"77"},{week:"April 13 - April 18",total:"18,541,755",rank:"68"},{week:"April 6 - April 11",total:"4,479,526",rank:"81"},{week:"March 30 - April 4",total:"13,399,129",rank:"73"},{week:"March 23 - March 28",total:"16,456,717",rank:"68"}]
+},
+{
+name:"T3psu",
+overallTotal:"108,768,920",
+overallRank:"63",
+weeklyAverage:"18,128,153",
+missedDaily:"18",
+missedWeekly:"3",
+weeks:[{week:"April 27 - May 2",total:"9,214,853",rank:"48"},{week:"April 20 - April 25",total:"15,293,034",rank:"62"},{week:"April 13 - April 18",total:"21,260,859",rank:"62"},{week:"April 6 - April 11",total:"22,764,843",rank:"53"},{week:"March 30 - April 4",total:"22,377,069",rank:"61"},{week:"March 23 - March 28",total:"17,858,262",rank:"65"}]
+},
+{
+name:"tij",
+overallTotal:"185,379,665",
+overallRank:"33",
+weeklyAverage:"30,896,611",
+missedDaily:"2",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"12,426,865",rank:"28"},{week:"April 20 - April 25",total:"32,055,699",rank:"12"},{week:"April 13 - April 18",total:"27,287,999",rank:"54"},{week:"April 6 - April 11",total:"33,157,655",rank:"29"},{week:"March 30 - April 4",total:"36,179,505",rank:"33"},{week:"March 23 - March 28",total:"44,271,942",rank:"30"}]
+},
+{
+name:"TLCHIN",
+overallTotal:"165,175,158",
+overallRank:"42",
+weeklyAverage:"27,529,193",
+missedDaily:"15",
+missedWeekly:"1",
+weeks:[{week:"April 27 - May 2",total:"12,931,701",rank:"25"},{week:"April 20 - April 25",total:"31,608,928",rank:"13"},{week:"April 13 - April 18",total:"35,155,291",rank:"37"},{week:"April 6 - April 11",total:"21,687,007",rank:"54"},{week:"March 30 - April 4",total:"31,040,988",rank:"45"},{week:"March 23 - March 28",total:"32,751,243",rank:"43"}]
+},
+{
+name:"TurkeyG",
+overallTotal:"85,282,069",
+overallRank:"69",
+weeklyAverage:"14,213,678",
+missedDaily:"22",
+missedWeekly:"5",
+weeks:[{week:"April 27 - May 2",total:"5,566,498",rank:"66"},{week:"April 20 - April 25",total:"14,615,227",rank:"64"},{week:"April 13 - April 18",total:"15,335,037",rank:"74"},{week:"April 6 - April 11",total:"13,480,799",rank:"67"},{week:"March 30 - April 4",total:"16,128,595",rank:"66"},{week:"March 23 - March 28",total:"20,155,913",rank:"61"}]
+},
+{
+name:"Valentine85",
+overallTotal:"87,414,004",
+overallRank:"66",
+weeklyAverage:"14,569,001",
+missedDaily:"22",
+missedWeekly:"5",
+weeks:[{week:"April 27 - May 2",total:"4,200,012",rank:"74"},{week:"April 20 - April 25",total:"21,021,536",rank:"50"},{week:"April 13 - April 18",total:"17,023,766",rank:"71"},{week:"April 6 - April 11",total:"16,673,873",rank:"63"},{week:"March 30 - April 4",total:"14,542,500",rank:"69"},{week:"March 23 - March 28",total:"13,952,317",rank:"72"}]
+},
+{
+name:"XxStonexX",
+overallTotal:"123,732,733",
+overallRank:"57",
+weeklyAverage:"20,622,122",
+missedDaily:"20",
+missedWeekly:"4",
+weeks:[{week:"April 27 - May 2",total:"12,297,061",rank:"30"},{week:"April 20 - April 25",total:"14,543,950",rank:"65"},{week:"April 13 - April 18",total:"35,539,559",rank:"36"},{week:"April 6 - April 11",total:"12,026,412",rank:"70"},{week:"March 30 - April 4",total:"16,652,746",rank:"64"},{week:"March 23 - March 28",total:"32,673,005",rank:"44"}]
+},
+{
+name:"Carson29",
+overallTotal:"33,829,493",
+overallRank:"87",
+weeklyAverage:"5,638,249",
+missedDaily:"24",
+missedWeekly:"6",
+weeks:[{week:"April 27 - May 2",total:"0",rank:"89"},{week:"April 20 - April 25",total:"0",rank:"89"},{week:"April 13 - April 18",total:"0",rank:"91"},{week:"April 6 - April 11",total:"0",rank:"86"},{week:"March 30 - April 4",total:"14,236,363",rank:"72"},{week:"March 23 - March 28",total:"19,593,130",rank:"63"}]
+},
+{
+name:"EFGH",
+overallTotal:"116,268,209",
+overallRank:"61",
+weeklyAverage:"23,253,642",
+missedDaily:"15",
+missedWeekly:"4",
+weeks:[{week:"April 27 - May 2",total:"6,073,789",rank:"64"},{week:"April 20 - April 25",total:"10,844,648",rank:"74"},{week:"April 13 - April 18",total:"11,291,179",rank:"80"},{week:"April 6 - April 11",total:"10,432,863",rank:"73"},{week:"March 30 - April 4",total:"77,625,730",rank:"4"},{week:"March 23 - March 28",total:"",rank:""}]
+},
+{
+name:"IJKL",
+overallTotal:"57,934,332",
+overallRank:"80",
+weeklyAverage:"11,586,866",
+missedDaily:"17",
+missedWeekly:"4",
+weeks:[{week:"April 27 - May 2",total:"2,903,443",rank:"83"},{week:"April 20 - April 25",total:"3,858,111",rank:"85"},{week:"April 13 - April 18",total:"8,737,434",rank:"82"},{week:"April 6 - April 11",total:"8,030,907",rank:"76"},{week:"March 30 - April 4",total:"34,404,437",rank:"37"},{week:"March 23 - March 28",total:"",rank:""}]
+},
+{
+name:"INMORTALES",
+overallTotal:"71,957,629",
+overallRank:"74",
+weeklyAverage:"11,992,938",
+missedDaily:"25",
+missedWeekly:"4",
+weeks:[{week:"April 27 - May 2",total:"4,007,299",rank:"76"},{week:"April 20 - April 25",total:"9,594,890",rank:"76"},{week:"April 13 - April 18",total:"7,965,578",rank:"83"},{week:"April 6 - April 11",total:"20,230,137",rank:"56"},{week:"March 30 - April 4",total:"8,844,126",rank:"81"},{week:"March 23 - March 28",total:"21,315,599",rank:"60"}]
+},
+{
+name:"MatthewKehling",
+overallTotal:"35,327,275",
+overallRank:"86",
+weeklyAverage:"11,775,758",
+missedDaily:"4",
+missedWeekly:"3",
+weeks:[{week:"April 27 - May 2",total:"9,919,147",rank:"40"},{week:"April 20 - April 25",total:"18,993,984",rank:"54"},{week:"April 13 - April 18",total:"6,414,144",rank:"86"},{week:"April 6 - April 11",total:"",rank:""},{week:"March 30 - April 4",total:"",rank:""},{week:"March 23 - March 28",total:"",rank:""}]
+},
+{
+name:"MexCol",
+overallTotal:"61,970,472",
+overallRank:"77",
+weeklyAverage:"10,328,412",
+missedDaily:"21",
+missedWeekly:"6",
+weeks:[{week:"April 27 - May 2",total:"0",rank:"89"},{week:"April 20 - April 25",total:"9,093,345",rank:"77"},{week:"April 13 - April 18",total:"18,541,755",rank:"68"},{week:"April 6 - April 11",total:"4,479,526",rank:"81"},{week:"March 30 - April 4",total:"13,399,129",rank:"73"},{week:"March 23 - March 28",total:"16,456,717",rank:"68"}]
+},
+{
+name:"Mr GAMER",
+overallTotal:"43,315,703",
+overallRank:"85",
+weeklyAverage:"14,438,568",
+missedDaily:"5",
+missedWeekly:"2",
+weeks:[{week:"April 27 - May 2",total:"1,577,609",rank:"87"},{week:"April 20 - April 25",total:"23,186,250",rank:"45"},{week:"April 13 - April 18",total:"18,551,844",rank:"67"},{week:"April 6 - April 11",total:"",rank:""},{week:"March 30 - April 4",total:"",rank:""},{week:"March 23 - March 28",total:"",rank:""}]
+},
+{
+name:"WALTER676",
+overallTotal:"14,455,191",
+overallRank:"92",
+weeklyAverage:"4,818,397",
+missedDaily:"11",
+missedWeekly:"3",
+weeks:[{week:"April 27 - May 2",total:"2,735,882",rank:"84"},{week:"April 20 - April 25",total:"7,550,880",rank:"80"},{week:"April 13 - April 18",total:"4,168,429",rank:"87"},{week:"April 6 - April 11",total:"",rank:""},{week:"March 30 - April 4",total:"",rank:""},{week:"March 23 - March 28",total:"",rank:""}]
+},
+{
+name:"Tillu Bodmosh",
+overallTotal:"25,829,213",
+overallRank:"89",
+weeklyAverage:"12,914,607",
+missedDaily:"3",
+missedWeekly:"2",
+weeks:[{week:"April 27 - May 2",total:"8,702,143",rank:"54"},{week:"April 20 - April 25",total:"17,127,070",rank:"60"},{week:"April 13 - April 18",total:"",rank:""},{week:"April 6 - April 11",total:"",rank:""},{week:"March 30 - April 4",total:"",rank:""},{week:"March 23 - March 28",total:"",rank:""}]
+},
+{
+name:"a?????",
+overallTotal:"0",
+overallRank:"95",
+weeklyAverage:"",
+missedDaily:"0",
+missedWeekly:"0",
+weeks:[{week:"April 27 - May 2",total:"",rank:""},{week:"April 20 - April 25",total:"",rank:""},{week:"April 13 - April 18",total:"",rank:""},{week:"April 6 - April 11",total:"",rank:""},{week:"March 30 - April 4",total:"",rank:""},{week:"March 23 - March 28",total:"",rank:""}]
+}
+];
+let scoreChart = null;
+let rankChart = null;
+function num(value){let n=parseFloat(String(value).replace(/,/g,'').replace(/[^0-9.-]/g,''));return isNaN(n)?null:n;}
+function populateDropdown(){
+const sel=document.getElementById('playerSelect');
+sel.innerHTML='<option value="__all__">All Players</option>';
+players.forEach((p,i)=>{let opt=document.createElement('option');opt.value=i;opt.textContent=p.name;sel.appendChild(opt);});
+}
+function renderDashboard(){
+const val=document.getElementById('playerSelect').value;
+if(val==='__all__'){renderAllPlayersView();return;}
+const p=players[parseInt(val)];
+document.getElementById('chartsArea').classList.remove('hidden');
+document.getElementById('allPlayersPanel').classList.add('hidden');
+document.getElementById('cardPlayer').textContent=p.name;
+document.getElementById('cardRank').textContent=p.overallRank||'-';
+document.getElementById('cardTotal').textContent=p.overallTotal||'-';
+document.getElementById('cardAvg').textContent=p.weeklyAverage||'-';
+document.getElementById('cardDailyMiss').textContent=p.missedDaily||'-';
+document.getElementById('cardWeeklyMiss').textContent=p.missedWeekly||'-';
+document.getElementById('cardWeeks').textContent=p.weeks.filter(w=>num(w.total)!==null && num(w.total)>0).length;
+renderHistory(p);
+renderCharts(p);
+}
+function renderAllPlayersView(){
+document.getElementById('chartsArea').classList.add('hidden');
+document.getElementById('allPlayersPanel').classList.remove('hidden');
+document.getElementById('cardPlayer').textContent=players.length;
+document.getElementById('cardRank').textContent='-';
+document.getElementById('cardTotal').textContent='-';
+document.getElementById('cardAvg').textContent='-';
+document.getElementById('cardWeeks').textContent='-';
+document.getElementById('cardDailyMiss').textContent='-';
+document.getElementById('cardWeeklyMiss').textContent='-';
+renderAllPlayersTable();
+}
+function renderHistory(p){
+let table=document.getElementById('historyTable');
+table.innerHTML='<thead><tr><th>Week</th><th>Weekly Total</th><th>Weekly Rank</th></tr></thead><tbody>'+p.weeks.map(w=>`<tr><td>${w.week}</td><td>${w.total||''}</td><td>${w.rank||''}</td></tr>`).join('')+'</tbody>';
+}
+function renderCharts(p){
+const labels=p.weeks.map(w=>w.week).reverse();
+const totals=p.weeks.map(w=>num(w.total)).reverse();
+const ranks=p.weeks.map(w=>num(w.rank)).reverse();
+if(scoreChart)scoreChart.destroy();
+if(rankChart)rankChart.destroy();
+scoreChart=new Chart(document.getElementById('scoreChart'),{type:'line',data:{labels:labels,datasets:[{label:'Weekly Total',data:totals,tension:.3,borderColor:'#00FFB4',backgroundColor:'rgba(0,255,180,.18)',pointBackgroundColor:'#00FFB4',pointBorderColor:'#00FFB4'},{label:'20M Goal',data:labels.map(()=>20000000),borderColor:'#FF3296',borderDash:[6,5],pointRadius:0}]},options:{responsive:true,plugins:{legend:{labels:{color:'#DCDCDC',font:{family:'Segoe UI'}}}},scales:{x:{ticks:{color:'#B4B4C8'},grid:{color:'#28283C'}},y:{ticks:{color:'#B4B4C8'},grid:{color:'#28283C'}}}}});
+rankChart=new Chart(document.getElementById('rankChart'),{type:'line',data:{labels:labels,datasets:[{label:'Weekly Rank',data:ranks,tension:.3,borderColor:'#FFC800',backgroundColor:'rgba(255,200,0,.18)',pointBackgroundColor:'#FFC800',pointBorderColor:'#FFC800'}]},options:{responsive:true,plugins:{legend:{labels:{color:'#DCDCDC',font:{family:'Segoe UI'}}}},scales:{x:{ticks:{color:'#B4B4C8'},grid:{color:'#28283C'}},y:{reverse:true,ticks:{color:'#B4B4C8'},grid:{color:'#28283C'}}}}});
+}
+function renderAllPlayersTable(){
+let table=document.getElementById('allPlayersTable');
+table.innerHTML='<thead><tr><th>Player</th><th>Overall Total</th><th>Overall Rank</th><th>Weekly Average</th><th>Missed Daily Goals</th><th>Missed Weekly Goals</th></tr></thead><tbody>'+players.map((p,i)=>`<tr onclick="document.getElementById('playerSelect').value='${i}';renderDashboard();" style="cursor:pointer;"><td>${p.name}</td><td>${p.overallTotal}</td><td>${p.overallRank}</td><td>${p.weeklyAverage}</td><td>${p.missedDaily}</td><td>${p.missedWeekly}</td></tr>`).join('')+'</tbody>';
+}
+function filterAllPlayers(){let q=document.getElementById('searchBox').value.toLowerCase();let rows=document.querySelectorAll('#allPlayersTable tbody tr');rows.forEach(row=>{row.style.display=row.innerText.toLowerCase().includes(q)?'':'none';});}
+populateDropdown();
+renderAllPlayersView();
+</script>
+</body>
+</html>
+
