@@ -1,0 +1,1406 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WPX — Player Standings</title>
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+:root{--bg:#0a0a0f;--panel:#111118;--panel2:#1a1a24;--accent:#00ffb4;--accent2:#00b4ff;--accent3:#b464ff;--gold:#ffc800;--red:#ff3264;--text:#dcdce8;--dim:#6b6b88;--border:#2a2a3a;--nav-h:60px;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;}
+body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 20% 20%,rgba(0,255,180,0.04) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(0,180,255,0.04) 0%,transparent 60%);pointer-events:none;z-index:0;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:var(--nav-h);background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;backdrop-filter:blur(10px);}
+.nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.nav-brand img{height:36px;width:36px;object-fit:contain;border-radius:6px;}
+.nav-brand span{font-size:1.2rem;font-weight:800;color:var(--accent);letter-spacing:2px;}
+.nav-links a{color:var(--dim);text-decoration:none;margin-left:20px;font-size:0.85rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;transition:color 0.2s;}
+.nav-links a:hover,.nav-links a.active{color:var(--accent);}
+.page-wrap{position:relative;z-index:1;padding:24px 20px 40px;}
+.header{margin-bottom:20px;}
+.header h1{font-size:1.8rem;font-weight:900;color:var(--accent);letter-spacing:3px;text-transform:uppercase;}
+.header p{color:var(--dim);margin-top:4px;font-size:0.8rem;letter-spacing:1px;}
+.search-bar{margin-bottom:16px;}
+.search-bar input{background:var(--panel);border:1px solid var(--border);color:var(--text);padding:10px 16px;border-radius:8px;font-size:0.9rem;width:280px;outline:none;font-family:inherit;transition:border-color 0.2s;}
+.search-bar input:focus{border-color:var(--accent);}
+.search-bar input::placeholder{color:var(--dim);}
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:0.82rem;}
+thead tr{background:var(--panel);}
+th{padding:12px 14px;text-align:left;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);border-bottom:2px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;}
+th:hover{color:var(--text);}
+th.sorted-asc::after{content:' ?';font-size:0.65rem;}
+th.sorted-desc::after{content:' ?';font-size:0.65rem;}
+th.accent{color:var(--accent);border-bottom-color:var(--accent);}
+th.accent2{color:var(--accent2);border-bottom-color:var(--accent2);}
+th.accent3{color:var(--accent3);border-bottom-color:var(--accent3);}
+td{padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap;}
+tbody tr{background:var(--panel2);transition:background 0.15s;}
+tbody tr:nth-child(even){background:var(--panel);}
+tbody tr:hover{background:rgba(0,255,180,0.06);cursor:pointer;}
+.rank-1{color:var(--gold);font-weight:900;font-size:1rem;}
+.rank-2{color:#c0c0c0;font-weight:800;}
+.rank-3{color:#cd7f32;font-weight:800;}
+.player-name{font-weight:700;color:var(--text);}
+.player-name a{color:inherit;text-decoration:none;transition:color 0.2s;}
+.player-name a:hover{color:var(--accent);}
+.score{font-family:'Courier New',monospace;color:var(--accent2);font-weight:600;}
+.week-score{font-family:'Courier New',monospace;color:var(--text);}
+.goal-met{color:var(--gold);font-weight:600;}
+.avg{color:var(--accent3);font-family:'Courier New',monospace;}
+.missed{color:var(--red);font-weight:700;}
+.empty{color:var(--border);}
+@media(max-width:768px){.header h1{font-size:1.3rem;}th,td{padding:8px 10px;}.search-bar input{width:100%;}}
+</style>
+</head>
+<body>
+<nav>
+<a class="nav-brand" href="wpx_standings.html">
+<img src="https://raw.githubusercontent.com/Kimpossible7544/WPX/main/icon.png" alt="WPX Logo" onerror="this.style.display='none'"/>
+<span>WARRIOR PHOENIX</span>
+</a>
+<div class="nav-links">
+<a href="wpx_standings.html" class="active">Standings</a>
+<a href="wpx_dashboard.html">Dashboard</a>
+<a href="wpx_projections.html">Projections</a>
+</div>
+</nav>
+<div class="page-wrap">
+<div class="header">
+<h1>Player Standings</h1>
+<p>Last updated: Apr 30, 2026 8:49 AM</p>
+</div>
+<div class="search-bar">
+<input type="text" id="search" placeholder="Search players..." onkeyup="filterTable()" />
+</div>
+<div class="table-wrap">
+<table id="standings">
+<thead><tr>
+<th class="accent" onclick="sortTable(0)">Rank</th>
+<th onclick="sortTable(1)">Player</th>
+<th class="accent2" onclick="sortTable(2)">Total Score</th>
+<th class="accent3" onclick="sortTable(3)">Weekly Avg</th>
+<th onclick="sortTable(4)">Missed Daily</th>
+<th onclick="sortTable(5)">Missed Weekly</th>
+<th onclick="sortTable(6)">April 27 - May 2</th>
+<th onclick="sortTable(7)">April 20 - April 25</th>
+<th onclick="sortTable(8)">April 13 - April 18</th>
+<th onclick="sortTable(9)">April 6 - April 11</th>
+<th onclick="sortTable(10)">March 30 - April 4</th>
+<th onclick="sortTable(11)">March 23 - March 28</th>
+</tr></thead>
+<tbody>
+<tr onclick="location.href='wpx_dashboard.html?player=Ender'" >
+<td class="rank-2">2</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Ender">Ender</a></td>
+<td class="score">439,853,213</td>
+<td class="avg">73,308,869</td>
+<td>0</td>
+<td class="missed">1</td>
+<td class="week-score">16,474,469</td>
+<td class="goal-met">30,020,845</td>
+<td class="goal-met">120,005,962</td>
+<td class="goal-met">56,540,633</td>
+<td class="goal-met">98,933,300</td>
+<td class="goal-met">117,878,004</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=DestinedOne'" >
+<td class="">14</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=DestinedOne">DestinedOne</a></td>
+<td class="score">240,585,234</td>
+<td class="avg">40,097,539</td>
+<td class="missed">6</td>
+<td class="missed">1</td>
+<td class="week-score">16,542,163</td>
+<td class="goal-met">31,402,307</td>
+<td class="goal-met">48,349,084</td>
+<td class="goal-met">31,273,494</td>
+<td class="goal-met">66,680,135</td>
+<td class="goal-met">46,338,051</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=GaurangM'" >
+<td class="">18</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=GaurangM">GaurangM</a></td>
+<td class="score">227,803,525</td>
+<td class="avg">37,967,254</td>
+<td class="missed">6</td>
+<td class="missed">1</td>
+<td class="week-score">9,492,620</td>
+<td class="goal-met">29,540,158</td>
+<td class="goal-met">35,622,771</td>
+<td class="goal-met">48,534,103</td>
+<td class="goal-met">40,901,193</td>
+<td class="goal-met">63,712,680</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=kealThus'" >
+<td class="">6</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=kealThus">kealThus</a></td>
+<td class="score">294,239,528</td>
+<td class="avg">49,039,921</td>
+<td class="missed">3</td>
+<td class="missed">1</td>
+<td class="week-score">13,521,288</td>
+<td class="goal-met">34,846,202</td>
+<td class="goal-met">62,028,680</td>
+<td class="goal-met">47,444,008</td>
+<td class="goal-met">65,204,469</td>
+<td class="goal-met">71,194,881</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Kimpossible7544'" >
+<td class="">11</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Kimpossible7544">Kimpossible7544</a></td>
+<td class="score">257,409,100</td>
+<td class="avg">42,901,517</td>
+<td class="missed">1</td>
+<td class="missed">1</td>
+<td class="week-score">13,978,366</td>
+<td class="goal-met">39,537,036</td>
+<td class="goal-met">44,384,147</td>
+<td class="goal-met">43,128,745</td>
+<td class="goal-met">54,416,001</td>
+<td class="goal-met">61,964,805</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Ozzi'" >
+<td class="">9</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Ozzi">Ozzi</a></td>
+<td class="score">273,209,268</td>
+<td class="avg">45,534,878</td>
+<td class="missed">1</td>
+<td class="missed">1</td>
+<td class="week-score">19,608,990</td>
+<td class="goal-met">23,855,415</td>
+<td class="goal-met">63,028,769</td>
+<td class="goal-met">57,774,193</td>
+<td class="goal-met">45,656,317</td>
+<td class="goal-met">63,285,584</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=SurvivorBias'" >
+<td class="rank-1">1</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=SurvivorBias">SurvivorBias</a></td>
+<td class="score">461,241,569</td>
+<td class="avg">76,873,595</td>
+<td>0</td>
+<td>0</td>
+<td class="goal-met">20,349,778</td>
+<td class="goal-met">47,174,338</td>
+<td class="goal-met">121,405,689</td>
+<td class="goal-met">63,629,531</td>
+<td class="goal-met">101,388,372</td>
+<td class="goal-met">107,293,861</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Tha-Don'" >
+<td class="">56</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Tha-Don">Tha-Don</a></td>
+<td class="score">124,096,988</td>
+<td class="avg">20,682,831</td>
+<td class="missed">19</td>
+<td class="missed">2</td>
+<td class="week-score">7,140,391</td>
+<td class="week-score">19,224,965</td>
+<td class="goal-met">23,695,046</td>
+<td class="goal-met">24,843,360</td>
+<td class="goal-met">20,630,510</td>
+<td class="goal-met">28,562,716</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Valbru'" >
+<td class="">7</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Valbru">Valbru</a></td>
+<td class="score">284,822,863</td>
+<td class="avg">47,470,477</td>
+<td class="missed">6</td>
+<td class="missed">1</td>
+<td class="week-score">9,371,840</td>
+<td class="goal-met">44,162,128</td>
+<td class="goal-met">87,368,788</td>
+<td class="goal-met">46,886,229</td>
+<td class="goal-met">46,185,362</td>
+<td class="goal-met">50,848,516</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Adi500'" >
+<td class="">21</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Adi500">Adi500</a></td>
+<td class="score">219,317,940</td>
+<td class="avg">36,552,990</td>
+<td class="missed">7</td>
+<td class="missed">2</td>
+<td class="week-score">13,229,077</td>
+<td class="week-score">14,329,966</td>
+<td class="goal-met">48,212,975</td>
+<td class="goal-met">29,260,954</td>
+<td class="goal-met">60,234,427</td>
+<td class="goal-met">54,050,541</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=AreKayPee'" >
+<td class="">20</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=AreKayPee">AreKayPee</a></td>
+<td class="score">219,741,664</td>
+<td class="avg">36,623,611</td>
+<td class="missed">8</td>
+<td class="missed">1</td>
+<td class="week-score">13,638,137</td>
+<td class="goal-met">34,191,904</td>
+<td class="goal-met">31,888,262</td>
+<td class="goal-met">41,311,051</td>
+<td class="goal-met">41,597,299</td>
+<td class="goal-met">57,115,011</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Big%20Meech'" >
+<td class="">13</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Big%20Meech">Big Meech</a></td>
+<td class="score">246,974,911</td>
+<td class="avg">41,162,485</td>
+<td class="missed">10</td>
+<td class="missed">1</td>
+<td class="week-score">11,342,839</td>
+<td class="goal-met">40,564,328</td>
+<td class="goal-met">32,938,204</td>
+<td class="goal-met">70,347,434</td>
+<td class="goal-met">38,172,953</td>
+<td class="goal-met">53,609,153</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=BravoTeam25'" >
+<td class="">39</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=BravoTeam25">BravoTeam25</a></td>
+<td class="score">171,103,154</td>
+<td class="avg">28,517,192</td>
+<td class="missed">11</td>
+<td class="missed">1</td>
+<td class="week-score">11,986,525</td>
+<td class="goal-met">27,307,550</td>
+<td class="goal-met">41,452,570</td>
+<td class="goal-met">31,888,873</td>
+<td class="goal-met">30,188,593</td>
+<td class="goal-met">28,279,043</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=CARTON-LIN'" >
+<td class="">44</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=CARTON-LIN">CARTON-LIN</a></td>
+<td class="score">164,324,441</td>
+<td class="avg">27,387,407</td>
+<td class="missed">14</td>
+<td class="missed">1</td>
+<td class="week-score">9,010,533</td>
+<td class="goal-met">20,643,931</td>
+<td class="goal-met">44,391,437</td>
+<td class="goal-met">26,799,386</td>
+<td class="goal-met">32,262,833</td>
+<td class="goal-met">31,216,321</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=convivial'" >
+<td class="">75</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=convivial">convivial</a></td>
+<td class="score">71,223,862</td>
+<td class="avg">11,870,644</td>
+<td class="missed">23</td>
+<td class="missed">5</td>
+<td class="week-score">1,862,989</td>
+<td class="week-score">0</td>
+<td class="week-score">14,790,056</td>
+<td class="goal-met">25,897,424</td>
+<td class="week-score">9,856,254</td>
+<td class="week-score">18,817,139</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=COP%20ASHOK%20R3'" >
+<td class="">23</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=COP%20ASHOK%20R3">COP ASHOK R3</a></td>
+<td class="score">215,746,251</td>
+<td class="avg">35,957,709</td>
+<td class="missed">5</td>
+<td class="missed">1</td>
+<td class="week-score">19,144,956</td>
+<td class="goal-met">20,707,005</td>
+<td class="goal-met">40,059,052</td>
+<td class="goal-met">37,933,551</td>
+<td class="goal-met">53,557,252</td>
+<td class="goal-met">44,344,435</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Crazy%20On%20Break'" >
+<td class="rank-3">3</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Crazy%20On%20Break">Crazy On Break</a></td>
+<td class="score">336,533,906</td>
+<td class="avg">56,088,984</td>
+<td class="missed">6</td>
+<td class="missed">2</td>
+<td class="week-score">5,495,922</td>
+<td class="week-score">14,968,467</td>
+<td class="goal-met">139,274,222</td>
+<td class="goal-met">33,170,645</td>
+<td class="goal-met">82,761,690</td>
+<td class="goal-met">60,862,960</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Deadwake'" >
+<td class="">12</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Deadwake">Deadwake</a></td>
+<td class="score">248,382,602</td>
+<td class="avg">41,397,100</td>
+<td class="missed">4</td>
+<td class="missed">1</td>
+<td class="week-score">15,006,953</td>
+<td class="goal-met">33,296,340</td>
+<td class="goal-met">60,094,075</td>
+<td class="goal-met">37,234,819</td>
+<td class="goal-met">44,358,460</td>
+<td class="goal-met">58,391,955</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=edimarfem'" >
+<td class="">67</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=edimarfem">edimarfem</a></td>
+<td class="score">86,783,061</td>
+<td class="avg">14,463,844</td>
+<td class="missed">23</td>
+<td class="missed">5</td>
+<td class="week-score">4,125,036</td>
+<td class="week-score">13,099,139</td>
+<td class="week-score">15,997,938</td>
+<td class="week-score">17,350,068</td>
+<td class="week-score">16,111,763</td>
+<td class="goal-met">20,099,117</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=fantasmah'" >
+<td class="">94</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=fantasmah">fantasmah</a></td>
+<td class="score">4,099,619</td>
+<td class="avg">2,049,810</td>
+<td class="missed">4</td>
+<td class="missed">2</td>
+<td class="week-score">2,497,303</td>
+<td class="week-score">1,602,316</td>
+<td class="empty">—</td>
+<td class="empty">—</td>
+<td class="empty">—</td>
+<td class="empty">—</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=FernaLS'" >
+<td class="">73</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=FernaLS">FernaLS</a></td>
+<td class="score">72,673,544</td>
+<td class="avg">12,112,257</td>
+<td class="missed">23</td>
+<td class="missed">5</td>
+<td class="week-score">4,363,244</td>
+<td class="week-score">4,556,026</td>
+<td class="goal-met">21,252,175</td>
+<td class="week-score">13,070,341</td>
+<td class="week-score">14,267,949</td>
+<td class="week-score">15,163,809</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=HellBOY'" >
+<td class="">5</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=HellBOY">HellBOY</a></td>
+<td class="score">314,250,657</td>
+<td class="avg">52,375,110</td>
+<td class="missed">1</td>
+<td class="missed">1</td>
+<td class="week-score">12,572,014</td>
+<td class="goal-met">29,113,737</td>
+<td class="goal-met">62,502,756</td>
+<td class="goal-met">58,051,988</td>
+<td class="goal-met">57,903,212</td>
+<td class="goal-met">94,106,950</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Hnakai'" >
+<td class="">19</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Hnakai">Hnakai</a></td>
+<td class="score">227,710,380</td>
+<td class="avg">37,951,730</td>
+<td class="missed">7</td>
+<td class="missed">1</td>
+<td class="week-score">16,042,533</td>
+<td class="goal-met">31,500,173</td>
+<td class="goal-met">41,182,189</td>
+<td class="goal-met">44,239,600</td>
+<td class="goal-met">37,623,191</td>
+<td class="goal-met">57,122,694</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=indiasapu'" >
+<td class="">43</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=indiasapu">indiasapu</a></td>
+<td class="score">165,075,240</td>
+<td class="avg">27,512,540</td>
+<td class="missed">12</td>
+<td class="missed">3</td>
+<td class="week-score">12,493,272</td>
+<td class="goal-met">28,204,709</td>
+<td class="week-score">11,272,003</td>
+<td class="week-score">8,755,494</td>
+<td class="goal-met">43,040,555</td>
+<td class="goal-met">61,309,207</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Jbzscrews'" >
+<td class="">37</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Jbzscrews">Jbzscrews</a></td>
+<td class="score">175,924,346</td>
+<td class="avg">29,320,724</td>
+<td class="missed">12</td>
+<td class="missed">3</td>
+<td class="week-score">5,062,588</td>
+<td class="week-score">8,900,545</td>
+<td class="goal-met">38,249,115</td>
+<td class="week-score">7,571,717</td>
+<td class="goal-met">46,563,755</td>
+<td class="goal-met">69,576,626</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Lunacat'" >
+<td class="">17</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Lunacat">Lunacat</a></td>
+<td class="score">232,315,620</td>
+<td class="avg">38,719,270</td>
+<td class="missed">8</td>
+<td class="missed">2</td>
+<td class="week-score">13,707,063</td>
+<td class="goal-met">32,971,752</td>
+<td class="week-score">19,950,752</td>
+<td class="goal-met">75,448,385</td>
+<td class="goal-met">58,126,928</td>
+<td class="goal-met">32,110,740</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Lisa'" >
+<td class="">30</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Lisa">Lisa</a></td>
+<td class="score">189,549,224</td>
+<td class="avg">31,591,537</td>
+<td class="missed">13</td>
+<td class="missed">1</td>
+<td class="week-score">13,935,466</td>
+<td class="goal-met">39,895,543</td>
+<td class="goal-met">39,846,485</td>
+<td class="goal-met">48,499,605</td>
+<td class="goal-met">22,560,555</td>
+<td class="goal-met">24,811,570</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=LeleXX85'" >
+<td class="">50</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=LeleXX85">LeleXX85</a></td>
+<td class="score">152,742,609</td>
+<td class="avg">25,457,102</td>
+<td class="missed">11</td>
+<td class="missed">1</td>
+<td class="week-score">14,898,353</td>
+<td class="goal-met">25,081,108</td>
+<td class="goal-met">23,331,111</td>
+<td class="goal-met">35,650,562</td>
+<td class="goal-met">31,455,718</td>
+<td class="goal-met">22,325,757</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=M-D'" >
+<td class="">38</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=M-D">M-D</a></td>
+<td class="score">174,583,052</td>
+<td class="avg">29,097,175</td>
+<td class="missed">10</td>
+<td class="missed">3</td>
+<td class="week-score">8,228,445</td>
+<td class="week-score">18,369,675</td>
+<td class="goal-met">51,182,540</td>
+<td class="week-score">17,352,977</td>
+<td class="goal-met">33,412,395</td>
+<td class="goal-met">46,037,020</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Mekk9'" >
+<td class="">4</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Mekk9">Mekk9</a></td>
+<td class="score">335,857,336</td>
+<td class="avg">55,976,223</td>
+<td class="missed">2</td>
+<td class="missed">1</td>
+<td class="week-score">10,900,610</td>
+<td class="goal-met">30,067,557</td>
+<td class="goal-met">64,593,230</td>
+<td class="goal-met">81,013,989</td>
+<td class="goal-met">56,549,071</td>
+<td class="goal-met">92,732,879</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Meowwe'" >
+<td class="">93</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Meowwe">Meowwe</a></td>
+<td class="score">5,796,919</td>
+<td class="avg">966,153</td>
+<td class="missed">27</td>
+<td class="missed">6</td>
+<td class="week-score">0</td>
+<td class="week-score">0</td>
+<td class="week-score">2,507,834</td>
+<td class="week-score">0</td>
+<td class="week-score">2,796,919</td>
+<td class="week-score">492,166</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Metalhead'" >
+<td class="">10</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Metalhead">Metalhead</a></td>
+<td class="score">261,431,083</td>
+<td class="avg">43,571,847</td>
+<td class="missed">3</td>
+<td class="missed">1</td>
+<td class="week-score">12,417,548</td>
+<td class="goal-met">27,677,981</td>
+<td class="goal-met">69,469,804</td>
+<td class="goal-met">39,925,399</td>
+<td class="goal-met">58,519,590</td>
+<td class="goal-met">53,420,761</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=MyHitMyWay'" >
+<td class="">29</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=MyHitMyWay">MyHitMyWay</a></td>
+<td class="score">191,402,505</td>
+<td class="avg">31,900,418</td>
+<td class="missed">15</td>
+<td class="missed">1</td>
+<td class="week-score">17,419,968</td>
+<td class="goal-met">25,948,565</td>
+<td class="goal-met">36,613,474</td>
+<td class="goal-met">35,508,534</td>
+<td class="goal-met">47,002,307</td>
+<td class="goal-met">28,909,657</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Ooppss'" >
+<td class="">16</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Ooppss">Ooppss</a></td>
+<td class="score">232,551,847</td>
+<td class="avg">38,758,641</td>
+<td class="missed">7</td>
+<td class="missed">1</td>
+<td class="week-score">6,315,339</td>
+<td class="goal-met">24,602,065</td>
+<td class="goal-met">64,763,568</td>
+<td class="goal-met">32,554,437</td>
+<td class="goal-met">47,763,680</td>
+<td class="goal-met">56,552,758</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=RedDawn2110'" >
+<td class="">27</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=RedDawn2110">RedDawn2110</a></td>
+<td class="score">195,186,953</td>
+<td class="avg">32,531,159</td>
+<td class="missed">14</td>
+<td class="missed">2</td>
+<td class="week-score">7,089,469</td>
+<td class="week-score">17,719,392</td>
+<td class="goal-met">51,528,926</td>
+<td class="goal-met">25,995,801</td>
+<td class="goal-met">34,898,381</td>
+<td class="goal-met">57,954,984</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Rushu19'" >
+<td class="">49</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Rushu19">Rushu19</a></td>
+<td class="score">158,452,193</td>
+<td class="avg">26,408,699</td>
+<td class="missed">12</td>
+<td class="missed">2</td>
+<td class="week-score">9,505,488</td>
+<td class="week-score">18,271,336</td>
+<td class="goal-met">42,623,393</td>
+<td class="goal-met">22,960,444</td>
+<td class="goal-met">29,715,349</td>
+<td class="goal-met">35,376,183</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Slap-mlt-can'" >
+<td class="">59</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Slap-mlt-can">Slap-mlt-can</a></td>
+<td class="score">122,481,001</td>
+<td class="avg">20,413,500</td>
+<td class="missed">21</td>
+<td class="missed">4</td>
+<td class="week-score">8,097,386</td>
+<td class="week-score">16,550,218</td>
+<td class="week-score">16,099,653</td>
+<td class="week-score">13,994,236</td>
+<td class="goal-met">33,764,932</td>
+<td class="goal-met">33,974,576</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Smokie%20boi'" >
+<td class="">15</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Smokie%20boi">Smokie boi</a></td>
+<td class="score">233,938,410</td>
+<td class="avg">38,989,735</td>
+<td class="missed">3</td>
+<td class="missed">2</td>
+<td class="week-score">15,104,801</td>
+<td class="goal-met">28,712,415</td>
+<td class="goal-met">41,082,556</td>
+<td class="week-score">2,218,725</td>
+<td class="goal-met">64,804,429</td>
+<td class="goal-met">82,015,484</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Storm-Batey'" >
+<td class="">55</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Storm-Batey">Storm-Batey</a></td>
+<td class="score">135,267,421</td>
+<td class="avg">22,544,570</td>
+<td class="missed">17</td>
+<td class="missed">1</td>
+<td class="week-score">9,710,102</td>
+<td class="goal-met">28,541,958</td>
+<td class="goal-met">20,087,928</td>
+<td class="goal-met">20,645,713</td>
+<td class="goal-met">27,871,674</td>
+<td class="goal-met">28,410,046</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=THE%20LEGEND'" >
+<td class="">8</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=THE%20LEGEND">THE LEGEND</a></td>
+<td class="score">274,346,900</td>
+<td class="avg">45,724,483</td>
+<td class="missed">11</td>
+<td class="missed">2</td>
+<td class="week-score">5,739,297</td>
+<td class="week-score">5,119,878</td>
+<td class="goal-met">95,394,172</td>
+<td class="goal-met">26,518,796</td>
+<td class="goal-met">63,845,742</td>
+<td class="goal-met">77,729,015</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=theKD'" >
+<td class="">32</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=theKD">theKD</a></td>
+<td class="score">186,251,014</td>
+<td class="avg">31,041,836</td>
+<td class="missed">7</td>
+<td class="missed">1</td>
+<td class="week-score">13,072,471</td>
+<td class="goal-met">30,692,938</td>
+<td class="goal-met">28,505,483</td>
+<td class="goal-met">29,397,678</td>
+<td class="goal-met">38,138,710</td>
+<td class="goal-met">46,443,734</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Turtley22'" >
+<td class="">72</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Turtley22">Turtley22</a></td>
+<td class="score">73,389,095</td>
+<td class="avg">12,231,516</td>
+<td class="missed">26</td>
+<td class="missed">6</td>
+<td class="week-score">6,787,073</td>
+<td class="week-score">13,368,715</td>
+<td class="week-score">12,355,270</td>
+<td class="week-score">11,795,743</td>
+<td class="week-score">12,527,192</td>
+<td class="week-score">16,555,102</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Vio'" >
+<td class="">28</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Vio">Vio</a></td>
+<td class="score">193,677,583</td>
+<td class="avg">32,279,597</td>
+<td class="missed">9</td>
+<td class="missed">1</td>
+<td class="week-score">15,586,681</td>
+<td class="goal-met">27,752,745</td>
+<td class="goal-met">58,531,584</td>
+<td class="goal-met">37,569,609</td>
+<td class="goal-met">26,784,898</td>
+<td class="goal-met">27,452,066</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Webb91'" >
+<td class="">46</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Webb91">Webb91</a></td>
+<td class="score">162,649,036</td>
+<td class="avg">27,108,173</td>
+<td class="missed">13</td>
+<td class="missed">1</td>
+<td class="week-score">8,867,600</td>
+<td class="goal-met">27,198,370</td>
+<td class="goal-met">27,025,457</td>
+<td class="goal-met">33,063,855</td>
+<td class="goal-met">26,050,774</td>
+<td class="goal-met">40,442,980</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=XPmatrix'" >
+<td class="">35</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=XPmatrix">XPmatrix</a></td>
+<td class="score">181,688,109</td>
+<td class="avg">30,281,352</td>
+<td class="missed">13</td>
+<td class="missed">1</td>
+<td class="week-score">13,300,631</td>
+<td class="goal-met">32,142,100</td>
+<td class="goal-met">33,570,889</td>
+<td class="goal-met">32,987,507</td>
+<td class="goal-met">31,755,066</td>
+<td class="goal-met">37,931,916</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=ACoolNickName'" >
+<td class="">34</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=ACoolNickName">ACoolNickName</a></td>
+<td class="score">181,717,719</td>
+<td class="avg">30,286,287</td>
+<td class="missed">8</td>
+<td class="missed">1</td>
+<td class="week-score">14,426,078</td>
+<td class="goal-met">34,824,554</td>
+<td class="goal-met">28,236,853</td>
+<td class="goal-met">28,780,702</td>
+<td class="goal-met">47,227,229</td>
+<td class="goal-met">28,222,303</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Addisssss'" >
+<td class="">51</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Addisssss">Addisssss</a></td>
+<td class="score">146,747,178</td>
+<td class="avg">24,457,863</td>
+<td class="missed">17</td>
+<td class="missed">1</td>
+<td class="week-score">11,904,886</td>
+<td class="goal-met">23,190,874</td>
+<td class="goal-met">29,146,407</td>
+<td class="goal-met">28,684,562</td>
+<td class="goal-met">25,448,922</td>
+<td class="goal-met">28,371,527</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Ashmit%20Odisha'" >
+<td class="">24</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Ashmit%20Odisha">Ashmit Odisha</a></td>
+<td class="score">202,505,317</td>
+<td class="avg">33,750,886</td>
+<td class="missed">10</td>
+<td class="missed">1</td>
+<td class="week-score">11,095,762</td>
+<td class="goal-met">28,031,868</td>
+<td class="goal-met">33,681,697</td>
+<td class="goal-met">32,801,125</td>
+<td class="goal-met">35,406,562</td>
+<td class="goal-met">61,488,303</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Balkan'" >
+<td class="">48</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Balkan">Balkan</a></td>
+<td class="score">159,500,732</td>
+<td class="avg">26,583,455</td>
+<td class="missed">15</td>
+<td class="missed">2</td>
+<td class="week-score">10,689,356</td>
+<td class="week-score">18,794,268</td>
+<td class="goal-met">37,581,041</td>
+<td class="goal-met">24,283,792</td>
+<td class="goal-met">31,464,686</td>
+<td class="goal-met">36,687,589</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=beterano'" >
+<td class="">47</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=beterano">beterano</a></td>
+<td class="score">162,551,808</td>
+<td class="avg">27,091,968</td>
+<td class="missed">12</td>
+<td class="missed">1</td>
+<td class="week-score">15,864,634</td>
+<td class="goal-met">24,874,717</td>
+<td class="goal-met">31,675,907</td>
+<td class="goal-met">32,936,104</td>
+<td class="goal-met">23,607,057</td>
+<td class="goal-met">33,593,389</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=biiee'" >
+<td class="">53</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=biiee">biiee</a></td>
+<td class="score">136,078,899</td>
+<td class="avg">22,679,817</td>
+<td class="missed">15</td>
+<td class="missed">2</td>
+<td class="week-score">8,992,977</td>
+<td class="goal-met">23,965,237</td>
+<td class="goal-met">23,855,381</td>
+<td class="week-score">19,203,332</td>
+<td class="goal-met">30,689,979</td>
+<td class="goal-met">29,371,993</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Blaque'" >
+<td class="">71</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Blaque">Blaque</a></td>
+<td class="score">76,284,429</td>
+<td class="avg">12,714,072</td>
+<td class="missed">24</td>
+<td class="missed">4</td>
+<td class="week-score">3,484,435</td>
+<td class="week-score">6,932,424</td>
+<td class="goal-met">35,801,732</td>
+<td class="week-score">1,548,723</td>
+<td class="goal-met">22,902,435</td>
+<td class="week-score">5,614,680</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=CarlosMLG'" >
+<td class="">82</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=CarlosMLG">CarlosMLG</a></td>
+<td class="score">55,012,793</td>
+<td class="avg">9,168,799</td>
+<td class="missed">26</td>
+<td class="missed">6</td>
+<td class="week-score">3,879,675</td>
+<td class="week-score">12,759,088</td>
+<td class="week-score">7,626,511</td>
+<td class="week-score">7,231,408</td>
+<td class="week-score">12,543,277</td>
+<td class="week-score">10,972,834</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Cgable'" >
+<td class="">91</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Cgable">Cgable</a></td>
+<td class="score">18,979,425</td>
+<td class="avg">3,163,238</td>
+<td class="missed">27</td>
+<td class="missed">6</td>
+<td class="week-score">726,500</td>
+<td class="week-score">3,264,357</td>
+<td class="week-score">2,486,526</td>
+<td class="week-score">3,187,404</td>
+<td class="week-score">5,107,925</td>
+<td class="week-score">4,206,713</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Chotta%20Hellboy'" >
+<td class="">83</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Chotta%20Hellboy">Chotta Hellboy</a></td>
+<td class="score">54,912,338</td>
+<td class="avg">18,304,113</td>
+<td class="missed">5</td>
+<td class="missed">1</td>
+<td class="week-score">10,516,245</td>
+<td class="goal-met">24,059,448</td>
+<td class="goal-met">20,336,645</td>
+<td class="empty">—</td>
+<td class="empty">—</td>
+<td class="empty">—</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Chuck%20Woolery'" >
+<td class="">84</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Chuck%20Woolery">Chuck Woolery</a></td>
+<td class="score">47,350,845</td>
+<td class="avg">7,891,808</td>
+<td class="missed">26</td>
+<td class="missed">6</td>
+<td class="week-score">2,929,934</td>
+<td class="week-score">4,451,762</td>
+<td class="week-score">12,422,712</td>
+<td class="week-score">6,102,577</td>
+<td class="week-score">11,785,203</td>
+<td class="week-score">9,658,657</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Daani'" >
+<td class="">81</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Daani">Daani</a></td>
+<td class="score">57,067,275</td>
+<td class="avg">9,511,213</td>
+<td class="missed">25</td>
+<td class="missed">6</td>
+<td class="week-score">3,881,145</td>
+<td class="week-score">11,639,303</td>
+<td class="week-score">11,363,485</td>
+<td class="week-score">12,899,564</td>
+<td class="week-score">6,362,918</td>
+<td class="week-score">10,920,860</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=GKPHyInd'" >
+<td class="">26</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=GKPHyInd">GKPHyInd</a></td>
+<td class="score">196,653,486</td>
+<td class="avg">32,775,581</td>
+<td class="missed">7</td>
+<td class="missed">1</td>
+<td class="week-score">13,897,468</td>
+<td class="goal-met">27,505,288</td>
+<td class="goal-met">31,699,992</td>
+<td class="goal-met">41,692,603</td>
+<td class="goal-met">47,381,014</td>
+<td class="goal-met">34,477,121</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=go0ns'" >
+<td class="">54</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=go0ns">go0ns</a></td>
+<td class="score">135,893,949</td>
+<td class="avg">33,973,487</td>
+<td class="missed">7</td>
+<td class="missed">1</td>
+<td class="week-score">8,366,148</td>
+<td class="goal-met">29,375,358</td>
+<td class="goal-met">59,173,876</td>
+<td class="goal-met">38,978,567</td>
+<td class="empty">—</td>
+<td class="empty">—</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=HulaGrafix'" >
+<td class="">58</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=HulaGrafix">HulaGrafix</a></td>
+<td class="score">122,839,795</td>
+<td class="avg">20,473,299</td>
+<td class="missed">18</td>
+<td class="missed">2</td>
+<td class="week-score">9,069,461</td>
+<td class="goal-met">24,886,959</td>
+<td class="goal-met">24,718,079</td>
+<td class="goal-met">26,766,361</td>
+<td class="week-score">15,953,938</td>
+<td class="goal-met">21,444,997</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=HURSTBRO'" >
+<td class="">60</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=HURSTBRO">HURSTBRO</a></td>
+<td class="score">121,109,294</td>
+<td class="avg">20,184,882</td>
+<td class="missed">20</td>
+<td class="missed">4</td>
+<td class="week-score">6,173,793</td>
+<td class="week-score">18,610,825</td>
+<td class="week-score">18,137,351</td>
+<td class="week-score">14,378,333</td>
+<td class="goal-met">22,378,720</td>
+<td class="goal-met">41,430,272</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=IJAG'" >
+<td class="">22</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=IJAG">IJAG</a></td>
+<td class="score">216,810,833</td>
+<td class="avg">36,135,139</td>
+<td class="missed">12</td>
+<td class="missed">1</td>
+<td class="week-score">6,685,683</td>
+<td class="goal-met">21,278,923</td>
+<td class="goal-met">45,242,942</td>
+<td class="goal-met">27,753,752</td>
+<td class="goal-met">39,180,539</td>
+<td class="goal-met">76,668,994</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Jackal%20%240%20F2P'" >
+<td class="">45</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Jackal%20%240%20F2P">Jackal $0 F2P</a></td>
+<td class="score">163,908,504</td>
+<td class="avg">27,318,084</td>
+<td class="missed">8</td>
+<td class="missed">1</td>
+<td class="week-score">11,784,214</td>
+<td class="goal-met">23,103,144</td>
+<td class="goal-met">30,936,654</td>
+<td class="goal-met">35,336,730</td>
+<td class="goal-met">27,413,043</td>
+<td class="goal-met">35,334,719</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=J%E4ckal%20%240%20F2P.2'" >
+<td class="">41</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=J%E4ckal%20%240%20F2P.2">Jäckal $0 F2P.2</a></td>
+<td class="score">169,667,320</td>
+<td class="avg">28,277,887</td>
+<td class="missed">7</td>
+<td class="missed">1</td>
+<td class="week-score">9,241,105</td>
+<td class="goal-met">22,331,756</td>
+<td class="goal-met">30,647,543</td>
+<td class="goal-met">46,060,868</td>
+<td class="goal-met">29,913,121</td>
+<td class="goal-met">31,472,927</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Josh%20007'" >
+<td class="">25</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Josh%20007">Josh 007</a></td>
+<td class="score">200,714,326</td>
+<td class="avg">33,452,388</td>
+<td class="missed">9</td>
+<td class="missed">1</td>
+<td class="week-score">17,929,843</td>
+<td class="goal-met">31,228,101</td>
+<td class="goal-met">42,491,058</td>
+<td class="goal-met">38,456,518</td>
+<td class="goal-met">28,452,055</td>
+<td class="goal-met">42,156,751</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Knull%20is%20back'" >
+<td class="">65</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Knull%20is%20back">Knull is back</a></td>
+<td class="score">88,692,443</td>
+<td class="avg">14,782,074</td>
+<td class="missed">22</td>
+<td class="missed">5</td>
+<td class="week-score">3,005,893</td>
+<td class="week-score">14,190,485</td>
+<td class="goal-met">25,357,197</td>
+<td class="week-score">13,677,159</td>
+<td class="week-score">16,252,669</td>
+<td class="week-score">16,209,040</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=lion%20cute'" >
+<td class="">36</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=lion%20cute">lion cute</a></td>
+<td class="score">176,034,817</td>
+<td class="avg">29,339,136</td>
+<td class="missed">14</td>
+<td class="missed">1</td>
+<td class="week-score">10,864,946</td>
+<td class="goal-met">24,324,062</td>
+<td class="goal-met">28,784,874</td>
+<td class="goal-met">45,548,630</td>
+<td class="goal-met">41,625,325</td>
+<td class="goal-met">24,886,980</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=LittleOmig'" >
+<td class="">40</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=LittleOmig">LittleOmig</a></td>
+<td class="score">170,258,788</td>
+<td class="avg">28,376,465</td>
+<td class="missed">10</td>
+<td class="missed">1</td>
+<td class="week-score">13,332,324</td>
+<td class="goal-met">28,582,804</td>
+<td class="goal-met">35,875,629</td>
+<td class="goal-met">24,480,338</td>
+<td class="goal-met">32,079,963</td>
+<td class="goal-met">35,907,730</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=LoverGuy'" >
+<td class="">79</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=LoverGuy">LoverGuy</a></td>
+<td class="score">61,582,978</td>
+<td class="avg">12,316,596</td>
+<td class="missed">20</td>
+<td class="missed">5</td>
+<td class="week-score">9,133,865</td>
+<td class="empty">—</td>
+<td class="week-score">11,718,222</td>
+<td class="week-score">9,264,354</td>
+<td class="week-score">14,290,067</td>
+<td class="week-score">17,176,470</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Matys'" >
+<td class="">88</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Matys">Matys</a></td>
+<td class="score">26,753,792</td>
+<td class="avg">4,458,965</td>
+<td class="missed">27</td>
+<td class="missed">6</td>
+<td class="week-score">3,090,477</td>
+<td class="week-score">3,244,197</td>
+<td class="week-score">2,659,406</td>
+<td class="week-score">4,988,473</td>
+<td class="week-score">9,234,866</td>
+<td class="week-score">3,536,373</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Mervyn'" >
+<td class="">64</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Mervyn">Mervyn</a></td>
+<td class="score">99,361,506</td>
+<td class="avg">16,560,251</td>
+<td class="missed">24</td>
+<td class="missed">4</td>
+<td class="week-score">5,138,723</td>
+<td class="week-score">10,211,919</td>
+<td class="goal-met">32,145,362</td>
+<td class="week-score">17,723,082</td>
+<td class="goal-met">20,312,854</td>
+<td class="week-score">13,829,566</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=misswiz'" >
+<td class="">62</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=misswiz">misswiz</a></td>
+<td class="score">114,541,536</td>
+<td class="avg">28,635,384</td>
+<td class="missed">8</td>
+<td class="missed">1</td>
+<td class="week-score">9,250,421</td>
+<td class="goal-met">30,057,635</td>
+<td class="goal-met">48,347,987</td>
+<td class="goal-met">26,885,493</td>
+<td class="empty">—</td>
+<td class="empty">—</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Pabloaob'" >
+<td class="">76</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Pabloaob">Pabloaob</a></td>
+<td class="score">63,882,328</td>
+<td class="avg">10,647,055</td>
+<td class="missed">26</td>
+<td class="missed">5</td>
+<td class="week-score">4,432,939</td>
+<td class="week-score">11,207,857</td>
+<td class="week-score">6,859,406</td>
+<td class="goal-met">24,723,050</td>
+<td class="week-score">5,343,606</td>
+<td class="week-score">11,315,470</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Rex%20Odie'" >
+<td class="">68</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Rex%20Odie">Rex Odie</a></td>
+<td class="score">86,373,708</td>
+<td class="avg">14,395,618</td>
+<td class="missed">21</td>
+<td class="missed">4</td>
+<td class="week-score">5,107,416</td>
+<td class="goal-met">21,412,907</td>
+<td class="goal-met">29,492,909</td>
+<td class="week-score">18,963,682</td>
+<td class="week-score">5,222,706</td>
+<td class="week-score">6,174,088</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=RyanD'" >
+<td class="">31</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=RyanD">RyanD</a></td>
+<td class="score">187,652,345</td>
+<td class="avg">31,275,391</td>
+<td class="missed">11</td>
+<td class="missed">1</td>
+<td class="week-score">9,543,305</td>
+<td class="goal-met">27,625,701</td>
+<td class="goal-met">34,866,616</td>
+<td class="goal-met">39,785,179</td>
+<td class="goal-met">35,490,817</td>
+<td class="goal-met">40,340,727</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Sweetgum%20Matt'" >
+<td class="">52</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Sweetgum%20Matt">Sweetgum Matt</a></td>
+<td class="score">137,736,623</td>
+<td class="avg">22,956,104</td>
+<td class="missed">21</td>
+<td class="missed">3</td>
+<td class="week-score">5,494,690</td>
+<td class="week-score">11,773,219</td>
+<td class="goal-met">31,003,664</td>
+<td class="week-score">19,084,714</td>
+<td class="goal-met">25,526,769</td>
+<td class="goal-met">44,853,567</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=T3psu'" >
+<td class="">63</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=T3psu">T3psu</a></td>
+<td class="score">108,768,920</td>
+<td class="avg">18,128,153</td>
+<td class="missed">18</td>
+<td class="missed">3</td>
+<td class="week-score">9,214,853</td>
+<td class="week-score">15,293,034</td>
+<td class="goal-met">21,260,859</td>
+<td class="goal-met">22,764,843</td>
+<td class="goal-met">22,377,069</td>
+<td class="week-score">17,858,262</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=tij'" >
+<td class="">33</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=tij">tij</a></td>
+<td class="score">185,379,665</td>
+<td class="avg">30,896,611</td>
+<td class="missed">2</td>
+<td class="missed">1</td>
+<td class="week-score">12,426,865</td>
+<td class="goal-met">32,055,699</td>
+<td class="goal-met">27,287,999</td>
+<td class="goal-met">33,157,655</td>
+<td class="goal-met">36,179,505</td>
+<td class="goal-met">44,271,942</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=TLCHIN'" >
+<td class="">42</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=TLCHIN">TLCHIN</a></td>
+<td class="score">165,175,158</td>
+<td class="avg">27,529,193</td>
+<td class="missed">15</td>
+<td class="missed">1</td>
+<td class="week-score">12,931,701</td>
+<td class="goal-met">31,608,928</td>
+<td class="goal-met">35,155,291</td>
+<td class="goal-met">21,687,007</td>
+<td class="goal-met">31,040,988</td>
+<td class="goal-met">32,751,243</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=TurkeyG'" >
+<td class="">69</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=TurkeyG">TurkeyG</a></td>
+<td class="score">85,282,069</td>
+<td class="avg">14,213,678</td>
+<td class="missed">22</td>
+<td class="missed">5</td>
+<td class="week-score">5,566,498</td>
+<td class="week-score">14,615,227</td>
+<td class="week-score">15,335,037</td>
+<td class="week-score">13,480,799</td>
+<td class="week-score">16,128,595</td>
+<td class="goal-met">20,155,913</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Valentine85'" >
+<td class="">66</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Valentine85">Valentine85</a></td>
+<td class="score">87,414,004</td>
+<td class="avg">14,569,001</td>
+<td class="missed">22</td>
+<td class="missed">5</td>
+<td class="week-score">4,200,012</td>
+<td class="goal-met">21,021,536</td>
+<td class="week-score">17,023,766</td>
+<td class="week-score">16,673,873</td>
+<td class="week-score">14,542,500</td>
+<td class="week-score">13,952,317</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=XxStonexX'" >
+<td class="">57</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=XxStonexX">XxStonexX</a></td>
+<td class="score">123,732,733</td>
+<td class="avg">20,622,122</td>
+<td class="missed">20</td>
+<td class="missed">4</td>
+<td class="week-score">12,297,061</td>
+<td class="week-score">14,543,950</td>
+<td class="goal-met">35,539,559</td>
+<td class="week-score">12,026,412</td>
+<td class="week-score">16,652,746</td>
+<td class="goal-met">32,673,005</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=EFGH'" >
+<td class="">61</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=EFGH">EFGH</a></td>
+<td class="score">116,268,209</td>
+<td class="avg">23,253,642</td>
+<td class="missed">15</td>
+<td class="missed">4</td>
+<td class="week-score">6,073,789</td>
+<td class="week-score">10,844,648</td>
+<td class="week-score">11,291,179</td>
+<td class="week-score">10,432,863</td>
+<td class="goal-met">77,625,730</td>
+<td class="empty">—</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=IJKL'" >
+<td class="">80</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=IJKL">IJKL</a></td>
+<td class="score">57,934,332</td>
+<td class="avg">11,586,866</td>
+<td class="missed">17</td>
+<td class="missed">4</td>
+<td class="week-score">2,903,443</td>
+<td class="week-score">3,858,111</td>
+<td class="week-score">8,737,434</td>
+<td class="week-score">8,030,907</td>
+<td class="goal-met">34,404,437</td>
+<td class="empty">—</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=INMORTALES'" >
+<td class="">74</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=INMORTALES">INMORTALES</a></td>
+<td class="score">71,957,629</td>
+<td class="avg">11,992,938</td>
+<td class="missed">25</td>
+<td class="missed">4</td>
+<td class="week-score">4,007,299</td>
+<td class="week-score">9,594,890</td>
+<td class="week-score">7,965,578</td>
+<td class="goal-met">20,230,137</td>
+<td class="week-score">8,844,126</td>
+<td class="goal-met">21,315,599</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=MatthewKehling'" >
+<td class="">86</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=MatthewKehling">MatthewKehling</a></td>
+<td class="score">35,327,275</td>
+<td class="avg">11,775,758</td>
+<td class="missed">4</td>
+<td class="missed">3</td>
+<td class="week-score">9,919,147</td>
+<td class="week-score">18,993,984</td>
+<td class="week-score">6,414,144</td>
+<td class="empty">—</td>
+<td class="empty">—</td>
+<td class="empty">—</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=MexCol'" >
+<td class="">77</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=MexCol">MexCol</a></td>
+<td class="score">61,970,472</td>
+<td class="avg">10,328,412</td>
+<td class="missed">21</td>
+<td class="missed">6</td>
+<td class="week-score">0</td>
+<td class="week-score">9,093,345</td>
+<td class="week-score">18,541,755</td>
+<td class="week-score">4,479,526</td>
+<td class="week-score">13,399,129</td>
+<td class="week-score">16,456,717</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Mr%20GAMER'" >
+<td class="">85</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Mr%20GAMER">Mr GAMER</a></td>
+<td class="score">43,315,703</td>
+<td class="avg">14,438,568</td>
+<td class="missed">5</td>
+<td class="missed">2</td>
+<td class="week-score">1,577,609</td>
+<td class="goal-met">23,186,250</td>
+<td class="week-score">18,551,844</td>
+<td class="empty">—</td>
+<td class="empty">—</td>
+<td class="empty">—</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=WALTER676'" >
+<td class="">92</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=WALTER676">WALTER676</a></td>
+<td class="score">14,455,191</td>
+<td class="avg">4,818,397</td>
+<td class="missed">11</td>
+<td class="missed">3</td>
+<td class="week-score">2,735,882</td>
+<td class="week-score">7,550,880</td>
+<td class="week-score">4,168,429</td>
+<td class="empty">—</td>
+<td class="empty">—</td>
+<td class="empty">—</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=Tillu%20Bodmosh'" >
+<td class="">89</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=Tillu%20Bodmosh">Tillu Bodmosh</a></td>
+<td class="score">25,829,213</td>
+<td class="avg">12,914,607</td>
+<td class="missed">3</td>
+<td class="missed">2</td>
+<td class="week-score">8,702,143</td>
+<td class="week-score">17,127,070</td>
+<td class="empty">—</td>
+<td class="empty">—</td>
+<td class="empty">—</td>
+<td class="empty">—</td>
+</tr>
+<tr onclick="location.href='wpx_dashboard.html?player=a%3F%3F%3F%3F%3F'" >
+<td class="">95</td>
+<td class="player-name"><a href="wpx_dashboard.html?player=a%3F%3F%3F%3F%3F">a사시미스시</a></td>
+<td class="score">0</td>
+<td class="empty">—</td>
+<td>0</td>
+<td>0</td>
+<td class="empty">—</td>
+<td class="empty">—</td>
+<td class="empty">—</td>
+<td class="empty">—</td>
+<td class="empty">—</td>
+<td class="empty">—</td>
+</tr>
+</tbody></table></div>
+<script>
+var sortDir={};
+function getVal(cell){
+  var t=cell.textContent.trim().replace(/,/g,'');
+  if(t==='-'||t==='')return sortDir._col%1===0?Infinity:'';
+  var n=parseFloat(t);
+  return isNaN(n)?t.toLowerCase():n;
+}
+function sortTable(col){
+  var tbody=document.querySelector('#standings tbody');
+  var rows=Array.from(tbody.querySelectorAll('tr'));
+  var asc=sortDir[col]!==true;
+  sortDir[col]=asc;
+  sortDir._col=col;
+  rows.sort(function(a,b){
+    var va=getVal(a.cells[col]),vb=getVal(b.cells[col]);
+    if(va===Infinity)return 1;
+    if(vb===Infinity)return -1;
+    if(va<vb)return asc?-1:1;
+    if(va>vb)return asc?1:-1;
+    return 0;
+  });
+  rows.forEach(function(r){tbody.appendChild(r);});
+  document.querySelectorAll('#standings thead th').forEach(function(th,i){
+    th.classList.remove('sorted-asc','sorted-desc');
+    if(i===col)th.classList.add(asc?'sorted-asc':'sorted-desc');
+  });
+}
+function filterTable(){
+  var input=document.getElementById('search').value.toLowerCase();
+  var rows=document.querySelectorAll('#standings tbody tr');
+  rows.forEach(function(row){
+    var name=row.cells[1].textContent.toLowerCase();
+    row.style.display=name.includes(input)?'':'none';
+  });
+}
+window.addEventListener('DOMContentLoaded',function(){sortTable(0);});
+</script>
+</div></body></html>
