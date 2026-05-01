@@ -61,6 +61,9 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:16px 2
 .loading .spinner{display:inline-block;width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:16px;}
 @keyframes spin{to{transform:rotate(360deg)}}
 .error-msg{text-align:center;padding:40px 20px;color:var(--red);font-size:0.95rem;}
+.day-btn{background:var(--panel2);border:1px solid var(--border);color:var(--dim);padding:6px 14px;border-radius:6px;font-size:0.75rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;}
+.day-btn:hover{border-color:var(--accent);color:var(--accent);}
+.day-btn.active{background:var(--accent);color:var(--bg);border-color:var(--accent);}
 </style>
 </head>
 <body>
@@ -90,6 +93,19 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:16px 2
 <div class="chart-card"><div class="chart-title">Weekly Score Trend</div><div class="chart-wrap"><canvas id="scoreChart"></canvas></div></div>
 <div class="chart-card"><div class="chart-title">Weekly Rank</div><div class="chart-wrap"><canvas id="rankChart"></canvas></div></div>
 </div>
+<div class="chart-card full" style="margin-bottom:28px;">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+<div class="chart-title" style="margin-bottom:0;">Daily Score — Week over Week</div>
+<div style="display:flex;gap:6px;">
+<button class="day-btn active" data-day="Monday" onclick="selectDay('Monday')">Mon</button>
+<button class="day-btn" data-day="Tuesday" onclick="selectDay('Tuesday')">Tue</button>
+<button class="day-btn" data-day="Wednesday" onclick="selectDay('Wednesday')">Wed</button>
+<button class="day-btn" data-day="Thursday" onclick="selectDay('Thursday')">Thu</button>
+<button class="day-btn" data-day="Friday" onclick="selectDay('Friday')">Fri</button>
+</div>
+</div>
+<div class="chart-wrap" style="height:260px;"><canvas id="dailyChart"></canvas></div>
+</div>
 <div class="chart-card" style="margin-bottom:28px;">
 <div class="chart-title">Weekly Breakdown</div>
 <table class="week-table"><thead><tr><th>Week</th><th>Score</th><th>Rank</th><th>20M Goal</th></tr></thead>
@@ -99,7 +115,9 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:16px 2
 </div>
 <script>
 var players = {};
-var scoreChart = null, rankChart = null;
+var dailyData = null;
+var selectedDay = 'Monday';
+var scoreChart = null, rankChart = null, dailyChart = null;
 
 function fmt(n) { return n ? n.toLocaleString() : '-'; }
 
@@ -170,12 +188,61 @@ function loadPlayer(name) {
   tbody.innerHTML = p.weeks.map(function (w) {
     return '<tr><td>' + w.label + '</td><td class="week-score">' + (w.score ? w.score.toLocaleString() : '-') + '</td><td class="rank-val">' + (w.rank || '-') + '</td><td class="' + (w.score >= 20000000 ? 'goal-yes' : 'goal-no') + '">' + (w.score >= 20000000 ? '&#9733; YES' : '&#10007; NO') + '</td></tr>';
   }).join('');
+
+  renderDailyChart(name, selectedDay);
+}
+
+function selectDay(day) {
+  selectedDay = day;
+  document.querySelectorAll('.day-btn').forEach(function (btn) {
+    btn.classList.toggle('active', btn.getAttribute('data-day') === day);
+  });
+  var sel = document.getElementById('playerSelect');
+  if (sel.value) renderDailyChart(sel.value, day);
+}
+
+function renderDailyChart(playerName, day) {
+  if (!dailyData || !dailyData.players[playerName]) return;
+  var pd = dailyData.players[playerName];
+  var scores = pd[day] || [];
+  var labels = dailyData.weekOrder.map(function (w) {
+    return w.replace(/ - .+/, '').replace(/(\w+)\s+(\d+)/, function (_, m, d) { return m.substring(0, 3) + ' ' + d; });
+  });
+  var avg = scores.reduce(function (a, b) { return a + b; }, 0) / (scores.filter(function (s) { return s > 0; }).length || 1);
+  var avgLine = scores.map(function () { return avg; });
+
+  if (dailyChart) dailyChart.destroy();
+  dailyChart = new Chart(document.getElementById('dailyChart'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: day + ' Score', data: scores, backgroundColor: scores.map(function (s) { return s >= 4000000 ? 'rgba(0,255,180,0.6)' : s > 0 ? 'rgba(0,180,255,0.5)' : 'rgba(107,107,136,0.2)'; }), borderColor: scores.map(function (s) { return s >= 4000000 ? '#00ffb4' : s > 0 ? '#00b4ff' : '#2a2a3a'; }), borderWidth: 1.5, borderRadius: 4 },
+        { label: 'Average', data: avgLine, type: 'line', borderColor: '#ffc800', borderWidth: 2, borderDash: [6, 4], pointRadius: 0, fill: false }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#6b6b88', font: { size: 11 } } },
+        tooltip: {
+          backgroundColor: '#1a1a24', titleColor: '#00ffb4', bodyColor: '#dcdce8', borderColor: '#2a2a3a', borderWidth: 1,
+          callbacks: { label: function (ctx) { return ctx.dataset.label + ': ' + (ctx.parsed.y ? ctx.parsed.y.toLocaleString() : '0'); } }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#6b6b88', font: { size: 10 } }, grid: { color: '#1a1a24' } },
+        y: { ticks: { color: '#6b6b88', font: { size: 10 }, callback: function (v) { return v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : v; } }, grid: { color: '#1a1a24' } }
+      }
+    }
+  });
 }
 
 async function init() {
   try {
     var data = await loadWPXData();
     players = data.players;
+    dailyData = data.dailyData;
     var sel = document.getElementById('playerSelect');
     sel.innerHTML = data.playerList.sort().map(function (name) {
       return '<option value="' + name.replace(/"/g, '&quot;') + '">' + name + '</option>';

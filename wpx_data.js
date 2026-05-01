@@ -21,7 +21,63 @@ async function loadWPXData() {
   const wb = XLSX.read(new Uint8Array(buf));
   const ws = wb.Sheets[WPX_CONFIG.sheet];
   if (!ws) throw new Error('Sheet "' + WPX_CONFIG.sheet + '" not found');
-  return parsePlayerTracking(XLSX.utils.sheet_to_json(ws, { header: 1 }));
+  var result = parsePlayerTracking(XLSX.utils.sheet_to_json(ws, { header: 1 }));
+  result.dailyData = parseWeeklySheets(wb);
+  return result;
+}
+
+var MONTH_MAP = {January:0,February:1,March:2,April:3,May:4,June:5,July:6,August:7,September:8,October:9,November:10,December:11};
+
+function parseWeekSheetDate(name) {
+  var m = name.match(/^(\w+)\s+(\d+)\s*-/);
+  if (!m) return null;
+  var mon = MONTH_MAP[m[1]];
+  if (mon === undefined) return null;
+  return new Date(2026, mon, parseInt(m[2]));
+}
+
+function parseWeeklySheets(wb) {
+  var DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  var sheets = [];
+  wb.SheetNames.forEach(function (name) {
+    var d = parseWeekSheetDate(name);
+    if (d) sheets.push({ name: name, date: d });
+  });
+  sheets.sort(function (a, b) { return a.date - b.date; });
+
+  var weekOrder = sheets.map(function (s) { return s.name; });
+  var playerDaily = {};
+
+  sheets.forEach(function (s, wi) {
+    var ws = wb.Sheets[s.name];
+    var rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+    for (var r = 1; r < rows.length; r++) {
+      var d = rows[r];
+      var name = d[0];
+      if (!name) continue;
+      name = String(name);
+      if (!playerDaily[name]) {
+        playerDaily[name] = {};
+        DAYS.forEach(function (day) { playerDaily[name][day] = []; });
+      }
+      DAYS.forEach(function (day, di) {
+        var val = d[di + 2];
+        playerDaily[name][day][wi] = (typeof val === 'number') ? val : 0;
+      });
+    }
+  });
+
+  // Fill gaps with 0 for players who weren't in every week
+  var totalWeeks = sheets.length;
+  Object.keys(playerDaily).forEach(function (name) {
+    DAYS.forEach(function (day) {
+      for (var i = 0; i < totalWeeks; i++) {
+        if (playerDaily[name][day][i] === undefined) playerDaily[name][day][i] = 0;
+      }
+    });
+  });
+
+  return { weekOrder: weekOrder, players: playerDaily };
 }
 
 function parsePlayerTracking(rows) {
