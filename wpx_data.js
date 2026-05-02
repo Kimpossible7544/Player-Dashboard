@@ -7,15 +7,12 @@
 const WPX_CONFIG = {
   dropboxUrl: 'https://www.dropbox.com/scl/fi/7hzcatrogbtfw6ypn4xmx/WPXFinal4.30.26.xlsm?rlkey=gal6fll38mz4kxrmlntud2ovn&dl=1',
   workerUrl: 'https://yellow-flower-ca92.kaheins32.workers.dev',
-  secret: 'Abigail2011!',
   sheet: 'Player Tracking'
 };
 
 async function loadWPXData() {
   const proxyUrl = WPX_CONFIG.workerUrl + '?action=proxy&url=' + encodeURIComponent(WPX_CONFIG.dropboxUrl);
-  const resp = await fetch(proxyUrl, {
-    headers: { 'X-WPX-Secret': WPX_CONFIG.secret }
-  });
+  const resp = await fetch(proxyUrl);
   if (!resp.ok) throw new Error('Fetch failed: ' + resp.status);
   const buf = await resp.arrayBuffer();
   const wb = XLSX.read(new Uint8Array(buf));
