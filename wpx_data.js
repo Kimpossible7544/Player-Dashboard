@@ -5,7 +5,7 @@
    so the share-link stays the same). */
 
 const WPX_CONFIG = {
-  dropboxUrl: 'https://www.dropbox.com/scl/fi/7hzcatrogbtfw6ypn4xmx/WPXFinal4.30.26.xlsm?rlkey=gal6fll38mz4kxrmlntud2ovn&dl=1',
+  dropboxUrl: 'https://www.dropbox.com/scl/fi/7hzcatrogbtfw6ypn4xmx/WPXFinal5.3.26.xlsm?rlkey=gal6fll38mz4kxrmlntud2ovn&dl=1',
   workerUrl: 'https://yellow-flower-ca92.kaheins32.workers.dev',
   sheet: 'Player Tracking'
 };
