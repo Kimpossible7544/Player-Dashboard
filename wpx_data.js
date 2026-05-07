@@ -3,42 +3,92 @@
 
 async function loadWPXData() {
   // ── CONFIGURATION ──────────────────────────────────────────────────────────
-  // To update the data source, change this URL to your new Dropbox share link.
-  // Make sure the link ends with   dl=1   (not dl=0) for a direct download.
+  // Your Dropbox shared link. IMPORTANT: must end with dl=1 for direct download.
+  // If you replace the file or move it, update this URL.
   const DROPBOX_URL =
     "https://www.dropbox.com/scl/fi/7hzcatrogbtfw6ypn4xmx/WPXFinal5.3.26.xlsm" +
-    "?rlkey=gal6fll38mz4kxrmlntud2ovn&st=bvozyveo&dl=1";
+    "?rlkey=gal6fll38mz4kxrmlntud2ovn&dl=1";
 
   const PLAYER_TRACKING_SHEET = "Player Tracking";
   // ───────────────────────────────────────────────────────────────────────────
 
-  // 1. Download the file as an ArrayBuffer
-  const response = await fetch(DROPBOX_URL);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
+  // Verify SheetJS is available
+  if (typeof XLSX === "undefined") {
+    throw new Error("SheetJS (XLSX) is not loaded. Make sure xlsx.full.min.js is included before wpx_data.js.");
   }
-  const buffer = await response.arrayBuffer();
+
+  // 1. Download the file as an ArrayBuffer
+  let response;
+  try {
+    response = await fetch(DROPBOX_URL);
+  } catch (err) {
+    console.error("[WPX] Fetch failed:", err);
+    throw new Error(
+      "Could not reach Dropbox. Check your internet connection or that the file is publicly shared. " +
+      "Details: " + err.message
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `Dropbox returned an error: ${response.status} ${response.statusText}. ` +
+      "Make sure the file is shared as 'Anyone with the link' in Dropbox."
+    );
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("text/html")) {
+    throw new Error(
+      "Dropbox returned an HTML page instead of the file. " +
+      "The share link may have expired or the file may require sign-in. " +
+      "Try generating a new share link in Dropbox and updating DROPBOX_URL in wpx_data.js."
+    );
+  }
+
+  let buffer;
+  try {
+    buffer = await response.arrayBuffer();
+  } catch (err) {
+    throw new Error("Failed to read file data from Dropbox: " + err.message);
+  }
+
+  if (buffer.byteLength < 1000) {
+    throw new Error(
+      `Downloaded file is only ${buffer.byteLength} bytes — this is not a valid Excel file. ` +
+      "The Dropbox link may be broken or the file may have moved."
+    );
+  }
 
   // 2. Parse with SheetJS
-  const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
+  let workbook;
+  try {
+    workbook = XLSX.read(buffer, { type: "array", cellDates: true });
+  } catch (err) {
+    throw new Error("SheetJS could not parse the file: " + err.message);
+  }
 
   // 3. Find the Player Tracking sheet
   if (!workbook.SheetNames.includes(PLAYER_TRACKING_SHEET)) {
-    throw new Error(`Sheet "${PLAYER_TRACKING_SHEET}" not found. Available: ${workbook.SheetNames.join(", ")}`);
+    throw new Error(
+      `Sheet "${PLAYER_TRACKING_SHEET}" not found in workbook. ` +
+      "Available sheets: " + workbook.SheetNames.join(", ")
+    );
   }
   const ws = workbook.Sheets[PLAYER_TRACKING_SHEET];
 
-  // 4. Convert to array-of-arrays (raw values, no header coercion)
+  // 4. Convert to array-of-arrays
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
-  if (rows.length < 2) throw new Error("Player Tracking sheet appears empty.");
+  if (rows.length < 2) {
+    throw new Error("Player Tracking sheet appears to be empty.");
+  }
 
-  const headers = rows[0]; // row 0 = header row
+  const headers = rows[0];
 
-  // 5. Parse week labels from headers.
-  //    Headers are pairs:  "Weekly Total (Week Label)"  /  "Weekly Rank (Week Label)"
-  //    They start at column index 6 and repeat every 2 columns.
+  // 5. Parse week labels and column indices from headers.
+  //    Columns come in pairs: "Weekly Total (Week Label)", "Weekly Rank (Week Label)"
+  //    starting at column index 6.
   const weekLabels = [];
-  const weekTotalCols = []; // column indices for weekly totals
+  const weekTotalCols = [];
 
   for (let c = 6; c < headers.length; c += 2) {
     const h = headers[c];
@@ -50,18 +100,15 @@ async function loadWPXData() {
   }
 
   if (weekLabels.length === 0) {
-    throw new Error("Could not find any weekly score columns in Player Tracking sheet.");
+    throw new Error("No weekly score columns found in Player Tracking sheet. Check the sheet format.");
   }
 
   // 6. Build the players object
   //    Column layout:
-  //      0  = Name
-  //      1  = Overall Total
-  //      2  = Overall Rank
-  //      3  = Overall Weekly Average
-  //      4  = Overall Missed Daily Goals
-  //      5  = Overall Missed Weekly Goals
-  //      6+ = pairs of (Weekly Total, Weekly Rank) per week
+  //      0 = Name            3 = Overall Weekly Average
+  //      1 = Overall Total   4 = Overall Missed Daily Goals
+  //      2 = Overall Rank    5 = Overall Missed Weekly Goals
+  //      6+ = pairs of (Weekly Total, Weekly Rank) per week (most recent first)
 
   const players = {};
 
@@ -85,5 +132,11 @@ async function loadWPXData() {
     };
   }
 
+  const playerCount = Object.keys(players).length;
+  if (playerCount === 0) {
+    throw new Error("No player data found in Player Tracking sheet.");
+  }
+
+  console.log(`[WPX] Loaded ${playerCount} players, ${weekLabels.length} weeks:`, weekLabels);
   return { weekLabels, players };
 }
