@@ -129,6 +129,11 @@ async function loadWPXData() {
     throw new Error("No completed weeks found yet.");
   }
 
+  // Reverse so oldest week is first (left) and newest is last (right)
+  weekLabels.reverse();
+  weekTotalCols.reverse();
+  weekRankCols.reverse();
+
   // 5. Build players object from Player Tracking
   //    Col 0=Name, 1=Overall Total, 2=Rank, 3=Weekly Avg, 4=Missed Daily, 5=Missed Weekly
   const players = {};
