@@ -48,8 +48,8 @@ async function loadWPXData() {
   // If you move or rename the file in Dropbox, generate a new share link and
   // replace the URL below. Use dl.dropboxusercontent.com to avoid CORS errors.
   const DROPBOX_URL =
-    "https://dl.dropboxusercontent.com/scl/fi/5ncxcj5cvsvuy4vbuoe4f/WPXFinal5.3.26.xlsm" +
-    "?rlkey=0m3xb1gu6tpkvccdgz0ijsx3k";
+    "https://dl.dropboxusercontent.com/scl/fi/l4bi5icfzeymfhkei5w6g/WPXFinal5.13.26.xlsm" +
+    "?rlkey=8la64j4nbvfo2tjrethqz5sky";
 
   const PLAYER_TRACKING_SHEET = "Player Tracking";
   const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
