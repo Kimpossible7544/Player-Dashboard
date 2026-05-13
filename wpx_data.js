@@ -2,27 +2,41 @@
 // Serves wpx_standings.html, wpx_dashboard.html, and wpx_projections.html
 // Depends on SheetJS (xlsx.full.min.js) already loaded on the page.
 
-// Returns true only if the week's Friday end date has fully passed.
-function isWeekComplete(weekLabel) {
-  // Labels are formatted like "May 4 - May 9" or "March 23 - March 28"
+// Returns true if the week has started (start date has arrived).
+function hasWeekStarted(weekLabel) {
   const parts = weekLabel.split(" - ");
-  if (parts.length < 2) return true; // can't parse — include it
+  if (parts.length < 2) return true;
 
-  const endPart = parts[1].trim(); // e.g. "May 9"
+  const startPart = parts[0].trim();
+  const now       = new Date();
+  const year      = now.getFullYear();
+
+  let startDate = new Date(`${startPart}, ${year}`);
+  if (isNaN(startDate.getTime())) return true;
+
+  if (startDate - now > 180 * 24 * 60 * 60 * 1000) {
+    startDate = new Date(`${startPart}, ${year - 1}`);
+  }
+
+  return now >= startDate;
+}
+
+// Returns true if the week's Friday end date has fully passed.
+function isWeekComplete(weekLabel) {
+  const parts = weekLabel.split(" - ");
+  if (parts.length < 2) return true;
+
+  const endPart = parts[1].trim();
   const now     = new Date();
   const year    = now.getFullYear();
 
-  // Try current year first, fall back to previous year if the date is
-  // more than ~6 months in the future (handles year boundaries).
   let endDate = new Date(`${endPart}, ${year}`);
-  if (isNaN(endDate.getTime())) return true; // unparseable — include it
+  if (isNaN(endDate.getTime())) return true;
 
   if (endDate - now > 180 * 24 * 60 * 60 * 1000) {
     endDate = new Date(`${endPart}, ${year - 1}`);
   }
 
-  // The week is complete once the day AFTER the end date has begun
-  // (i.e. Saturday 00:00 or later).
   const completionDate = new Date(endDate);
   completionDate.setDate(completionDate.getDate() + 1);
 
@@ -103,7 +117,7 @@ async function loadWPXData() {
 
   const headers = ptRows[0];
 
-  // 4. Parse week labels and column indices — only keep completed weeks
+  // 4. Parse week labels and column indices — include started weeks
   const weekLabels    = [];
   const weekTotalCols = [];
   const weekRankCols  = [];
@@ -115,9 +129,9 @@ async function loadWPXData() {
     if (!match) break;
 
     const label = match[1];
-    if (!isWeekComplete(label)) {
-      console.log(`[WPX] Skipping incomplete week: ${label}`);
-      continue; // hide weeks that haven't finished yet
+    if (!hasWeekStarted(label)) {
+      console.log(`[WPX] Skipping future week: ${label}`);
+      continue;
     }
 
     weekLabels.push(label);
@@ -125,8 +139,11 @@ async function loadWPXData() {
     weekRankCols.push(c + 1);
   }
 
+  // Track which week is currently in progress
+  const currentWeekLabel = weekLabels.find(label => !isWeekComplete(label)) || null;
+
   if (weekLabels.length === 0) {
-    throw new Error("No completed weeks found yet.");
+    throw new Error("No weeks found yet.");
   }
 
   // Reverse so oldest week is first (left) and newest is last (right)
@@ -151,9 +168,10 @@ async function loadWPXData() {
       missedDaily:  row[4] || 0,
       missedWeekly: row[5] || 0,
       weeks: weekTotalCols.map((col, i) => ({
-        label: weekLabels[i],
-        score: row[col]             || 0,
-        rank:  row[weekRankCols[i]] || null,
+        label:      weekLabels[i],
+        score:      row[col]             || 0,
+        rank:       row[weekRankCols[i]] || null,
+        inProgress: weekLabels[i] === currentWeekLabel,
       })),
     };
   }
@@ -213,9 +231,10 @@ async function loadWPXData() {
   const playerList = Object.keys(players);
 
   console.log(
-    `[WPX] Loaded ${playerList.length} players across ${weekLabels.length} completed weeks:`,
+    `[WPX] Loaded ${playerList.length} players across ${weekLabels.length} weeks` +
+    (currentWeekLabel ? ` (current: ${currentWeekLabel})` : '') + ':',
     weekLabels
   );
 
-  return { weekLabels, playerList, players, dailyData };
+  return { weekLabels, playerList, players, dailyData, currentWeekLabel };
 }

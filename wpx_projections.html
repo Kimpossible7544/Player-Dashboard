@@ -54,6 +54,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 24px
 .proj-table tr:last-child td{border-bottom:none;}
 .proj-row td{color:var(--accent3);font-style:italic;}
 .proj-row td:first-child::after{content:' (proj)';font-size:0.7rem;color:var(--dim);}
+.in-progress-label{display:inline-block;font-size:0.6rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent);background:rgba(0,255,180,0.12);padding:2px 8px;border-radius:10px;margin-left:8px;vertical-align:middle;}
 .actual-score{font-family:'Courier New',monospace;color:var(--accent2);}
 .proj-score{font-family:'Courier New',monospace;color:var(--accent3);}
 .goal-yes{color:var(--gold);font-weight:700;}
@@ -246,7 +247,8 @@ function loadPlayer(name) {
   var rows = sortedWeeks.map(function (w) {
     var vsAvg = avgScore > 0 ? ((w.score - avgScore) / avgScore * 100) : 0;
     var vsStr = w.score > 0 ? (vsAvg >= 0 ? '<span style="color:var(--accent)">+' + vsAvg.toFixed(1) + '%</span>' : '<span style="color:var(--red)">' + vsAvg.toFixed(1) + '%</span>') : '-';
-    return '<tr><td>' + w.label + '</td><td class="actual-score">' + (w.score ? w.score.toLocaleString() : '-') + '</td><td class="' + (w.score >= GOAL ? 'goal-yes' : w.score > 0 ? 'goal-no' : '') + '">' + (w.score >= GOAL ? '&#9733; YES' : w.score > 0 ? '&#10007; NO' : '-') + '</td><td>' + vsStr + '</td></tr>';
+    var labelHtml = w.label + (w.inProgress ? ' <span class="in-progress-label">live</span>' : '');
+    return '<tr><td>' + labelHtml + '</td><td class="actual-score">' + (w.score ? w.score.toLocaleString() : '-') + '</td><td class="' + (w.score >= GOAL ? 'goal-yes' : w.score > 0 ? 'goal-no' : '') + '">' + (w.score >= GOAL ? '&#9733; YES' : w.score > 0 ? '&#10007; NO' : '-') + '</td><td>' + vsStr + '</td></tr>';
   }).join('');
   var projRows = projScores.map(function (s, i) {
     return '<tr class="proj-row"><td>' + (futureLabels[i] || 'Week +' + (i + 1)) + '</td><td class="proj-score">' + s.toLocaleString() + '</td><td class="goal-proj">' + (s >= GOAL ? '&#9733; LIKELY' : '? TBD') + '</td><td>-</td></tr>';
