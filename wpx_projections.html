@@ -161,9 +161,10 @@ function loadPlayer(name) {
   var p = players[name]; if (!p) return;
   var numWeeks = parseInt(document.getElementById('projWeeks').value) || 3;
   var sortedWeeks = p.weeks.slice();
-  var projScores = project(sortedWeeks, numWeeks);
-  var trend = getTrend(sortedWeeks);
-  var actual = sortedWeeks.filter(function (w) { return w.score > 0; });
+  var completedWeeks = sortedWeeks.filter(function (w) { return !w.inProgress; });
+  var projScores = project(completedWeeks, numWeeks);
+  var trend = getTrend(completedWeeks);
+  var actual = completedWeeks.filter(function (w) { return w.score > 0; });
   var avgScore = actual.length ? actual.reduce(function (a, w) { return a + w.score; }, 0) / actual.length : 0;
   var bestWeek = actual.length ? Math.max.apply(null, actual.map(function (w) { return w.score; })) : 0;
   var worstWeek = actual.length ? Math.min.apply(null, actual.map(function (w) { return w.score; })) : 0;
@@ -259,8 +260,9 @@ function loadPlayer(name) {
 function buildLeaderboard() {
   var numWeeks = parseInt(document.getElementById('projWeeks').value) || 3;
   var entries = Object.values(players).map(function (p) {
-    var proj = project(p.weeks, numWeeks);
-    var trend = getTrend(p.weeks);
+    var completed = p.weeks.filter(function (w) { return !w.inProgress; });
+    var proj = project(completed, numWeeks);
+    var trend = getTrend(completed);
     return { name: p.name, proj1: proj[0] || 0, trend: trend, totalScore: p.totalScore };
   }).filter(function (e) { return e.proj1 > 0; }).sort(function (a, b) { return b.proj1 - a.proj1; });
   var maxProj = entries[0] ? entries[0].proj1 : 1;
