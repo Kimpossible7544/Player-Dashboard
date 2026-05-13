@@ -53,6 +53,9 @@ tbody tr:hover{background:rgba(0,255,180,0.06);cursor:pointer;}
 .avg{color:var(--accent3);font-family:'Courier New',monospace;}
 .missed{color:var(--red);font-weight:700;}
 .empty{color:var(--border);}
+.in-progress{font-style:italic;opacity:0.85;}
+th.in-progress-col{position:relative;}
+th.in-progress-col::before{content:'\25CF';color:var(--accent);margin-right:4px;font-size:0.6rem;vertical-align:middle;}
 .loading{text-align:center;padding:60px 20px;color:var(--dim);font-size:1rem;letter-spacing:1px;}
 .loading .spinner{display:inline-block;width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:16px;}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -105,7 +108,7 @@ function rankClass(r) {
   return '';
 }
 
-function buildHeaders(weeks) {
+function buildHeaders(weeks, currentWeekLabel) {
   var hr = document.getElementById('headerRow');
   var cols = [
     { label: 'Rank', cls: 'accent' },
@@ -115,7 +118,10 @@ function buildHeaders(weeks) {
     { label: 'Missed Daily', cls: '' },
     { label: 'Missed Weekly', cls: '' }
   ];
-  weeks.forEach(function (w) { cols.push({ label: w, cls: '' }); });
+  weeks.forEach(function (w) {
+    var cls = w === currentWeekLabel ? 'in-progress-col' : '';
+    cols.push({ label: w, cls: cls });
+  });
   hr.innerHTML = cols.map(function (c, i) {
     return '<th class="' + c.cls + '" onclick="sortTable(' + i + ')">' + c.label + '</th>';
   }).join('');
@@ -136,12 +142,13 @@ function buildRows(players, weeks) {
     html += '<td' + (p.missedDaily > 0 ? ' class="missed"' : '') + '>' + p.missedDaily + '</td>';
     html += '<td' + (p.missedWeekly > 0 ? ' class="missed"' : '') + '>' + p.missedWeekly + '</td>';
     p.weeks.forEach(function (w) {
+      var ipCls = w.inProgress ? ' in-progress' : '';
       if (!w.score) {
-        html += '<td class="empty">\u2014</td>';
+        html += '<td class="empty' + ipCls + '">\u2014</td>';
       } else if (w.score >= GOAL) {
-        html += '<td class="goal-met">' + w.score.toLocaleString() + '</td>';
+        html += '<td class="goal-met' + ipCls + '">' + w.score.toLocaleString() + '</td>';
       } else {
-        html += '<td class="week-score">' + w.score.toLocaleString() + '</td>';
+        html += '<td class="week-score' + ipCls + '">' + w.score.toLocaleString() + '</td>';
       }
     });
     html += '</tr>';
@@ -190,7 +197,7 @@ async function init() {
   try {
     var data = await loadWPXData();
     weekLabels = data.weekLabels;
-    buildHeaders(weekLabels);
+    buildHeaders(weekLabels, data.currentWeekLabel);
     buildRows(data.players, weekLabels);
     document.getElementById('lastUpdated').textContent = 'Data loaded \u2014 ' + new Date().toLocaleString();
     sortTable(0);

@@ -54,6 +54,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 24px
 .proj-table tr:last-child td{border-bottom:none;}
 .proj-row td{color:var(--accent3);font-style:italic;}
 .proj-row td:first-child::after{content:' (proj)';font-size:0.7rem;color:var(--dim);}
+.in-progress-label{display:inline-block;font-size:0.6rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent);background:rgba(0,255,180,0.12);padding:2px 8px;border-radius:10px;margin-left:8px;vertical-align:middle;}
 .actual-score{font-family:'Courier New',monospace;color:var(--accent2);}
 .proj-score{font-family:'Courier New',monospace;color:var(--accent3);}
 .goal-yes{color:var(--gold);font-weight:700;}
@@ -160,9 +161,10 @@ function loadPlayer(name) {
   var p = players[name]; if (!p) return;
   var numWeeks = parseInt(document.getElementById('projWeeks').value) || 3;
   var sortedWeeks = p.weeks.slice();
-  var projScores = project(sortedWeeks, numWeeks);
-  var trend = getTrend(sortedWeeks);
-  var actual = sortedWeeks.filter(function (w) { return w.score > 0; });
+  var completedWeeks = sortedWeeks.filter(function (w) { return !w.inProgress; });
+  var projScores = project(completedWeeks, numWeeks);
+  var trend = getTrend(completedWeeks);
+  var actual = completedWeeks.filter(function (w) { return w.score > 0; });
   var avgScore = actual.length ? actual.reduce(function (a, w) { return a + w.score; }, 0) / actual.length : 0;
   var bestWeek = actual.length ? Math.max.apply(null, actual.map(function (w) { return w.score; })) : 0;
   var worstWeek = actual.length ? Math.min.apply(null, actual.map(function (w) { return w.score; })) : 0;
@@ -246,7 +248,8 @@ function loadPlayer(name) {
   var rows = sortedWeeks.map(function (w) {
     var vsAvg = avgScore > 0 ? ((w.score - avgScore) / avgScore * 100) : 0;
     var vsStr = w.score > 0 ? (vsAvg >= 0 ? '<span style="color:var(--accent)">+' + vsAvg.toFixed(1) + '%</span>' : '<span style="color:var(--red)">' + vsAvg.toFixed(1) + '%</span>') : '-';
-    return '<tr><td>' + w.label + '</td><td class="actual-score">' + (w.score ? w.score.toLocaleString() : '-') + '</td><td class="' + (w.score >= GOAL ? 'goal-yes' : w.score > 0 ? 'goal-no' : '') + '">' + (w.score >= GOAL ? '&#9733; YES' : w.score > 0 ? '&#10007; NO' : '-') + '</td><td>' + vsStr + '</td></tr>';
+    var labelHtml = w.label + (w.inProgress ? ' <span class="in-progress-label">live</span>' : '');
+    return '<tr><td>' + labelHtml + '</td><td class="actual-score">' + (w.score ? w.score.toLocaleString() : '-') + '</td><td class="' + (w.score >= GOAL ? 'goal-yes' : w.score > 0 ? 'goal-no' : '') + '">' + (w.score >= GOAL ? '&#9733; YES' : w.score > 0 ? '&#10007; NO' : '-') + '</td><td>' + vsStr + '</td></tr>';
   }).join('');
   var projRows = projScores.map(function (s, i) {
     return '<tr class="proj-row"><td>' + (futureLabels[i] || 'Week +' + (i + 1)) + '</td><td class="proj-score">' + s.toLocaleString() + '</td><td class="goal-proj">' + (s >= GOAL ? '&#9733; LIKELY' : '? TBD') + '</td><td>-</td></tr>';
@@ -257,8 +260,9 @@ function loadPlayer(name) {
 function buildLeaderboard() {
   var numWeeks = parseInt(document.getElementById('projWeeks').value) || 3;
   var entries = Object.values(players).map(function (p) {
-    var proj = project(p.weeks, numWeeks);
-    var trend = getTrend(p.weeks);
+    var completed = p.weeks.filter(function (w) { return !w.inProgress; });
+    var proj = project(completed, numWeeks);
+    var trend = getTrend(completed);
     return { name: p.name, proj1: proj[0] || 0, trend: trend, totalScore: p.totalScore };
   }).filter(function (e) { return e.proj1 > 0; }).sort(function (a, b) { return b.proj1 - a.proj1; });
   var maxProj = entries[0] ? entries[0].proj1 : 1;
