@@ -180,7 +180,35 @@ async function loadWPXData() {
     throw new Error("No player data found in Player Tracking sheet.");
   }
 
-  // 6. Build dailyData from individual weekly sheets (completed weeks only)
+  // 6. Read "Week Settings" sheet for pushing flags
+  const WEEK_SETTINGS_SHEET = "Week Settings";
+  const notPushingWeeks = new Set();
+
+  if (workbook.SheetNames.includes(WEEK_SETTINGS_SHEET)) {
+    const wsRows = XLSX.utils.sheet_to_json(
+      workbook.Sheets[WEEK_SETTINGS_SHEET],
+      { header: 1, defval: null }
+    );
+    for (let r = 1; r < wsRows.length; r++) {
+      const weekLabel = wsRows[r][0];
+      const pushing   = String(wsRows[r][1] || "").trim().toUpperCase();
+      if (weekLabel && pushing === "N") {
+        notPushingWeeks.add(String(weekLabel).trim());
+      }
+    }
+    console.log("[WPX] Not-pushing weeks:", Array.from(notPushingWeeks));
+  } else {
+    console.log("[WPX] No 'Week Settings' sheet found \u2014 all weeks treated as pushing.");
+  }
+
+  // Add pushing flag to each player's week data
+  Object.values(players).forEach(p => {
+    p.weeks.forEach(w => {
+      w.pushing = !notPushingWeeks.has(w.label);
+    });
+  });
+
+  // 7. Build dailyData from individual weekly sheets (completed weeks only)
   const dailyData = {
     weekOrder: weekLabels,
     players:   {},
@@ -236,5 +264,5 @@ async function loadWPXData() {
     weekLabels
   );
 
-  return { weekLabels, playerList, players, dailyData, currentWeekLabel };
+  return { weekLabels, playerList, players, dailyData, currentWeekLabel, notPushingWeeks };
 }

@@ -112,13 +112,17 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:16px 2
 <table class="week-table"><thead><tr><th>Week</th><th>Score</th><th>Rank</th><th>20M Goal</th></tr></thead>
 <tbody id="weekTableBody"></tbody></table>
 </div>
+<div id="npFootnote" style="display:none;color:#ff7832;font-size:0.78rem;margin-top:8px;letter-spacing:0.5px;">* = Not pushing to win this week</div>
 </div>
 </div>
 <script>
 var players = {};
 var dailyData = null;
+var notPushingWeeks = new Set();
 var selectedDay = 'Monday';
 var scoreChart = null, rankChart = null, dailyChart = null;
+var NP_COLOR = '#ff7832';
+var NP_BG = 'rgba(255,120,50,0.15)';
 
 function fmt(n) { return n ? n.toLocaleString() : '-'; }
 
@@ -136,10 +140,12 @@ function loadPlayer(name) {
     '<div class="stat-card c6"><div class="stat-label">Missed Weekly</div><div class="stat-value red">' + p.missedWeekly + '</div></div>' +
     '<div class="stat-card c7"><div class="stat-label">20M Weeks</div><div class="stat-value accent">' + p.weeks.filter(function (w) { return w.score >= 20000000; }).length + '</div></div>';
 
-  var labels = p.weeks.map(function (w) { return w.label; });
+  var labels = p.weeks.map(function (w) { return w.pushing === false ? w.label + ' *' : w.label; });
   var scores = p.weeks.map(function (w) { return w.score; });
   var ranks = p.weeks.map(function (w) { return w.rank; });
   var goal = p.weeks.map(function () { return 20000000; });
+  var pointColors = p.weeks.map(function (w) { return w.pushing === false ? NP_COLOR : '#00b4ff'; });
+  var rankPointColors = p.weeks.map(function (w) { return w.pushing === false ? NP_COLOR : '#ffc800'; });
 
   if (scoreChart) scoreChart.destroy();
   if (rankChart) rankChart.destroy();
@@ -161,7 +167,7 @@ function loadPlayer(name) {
     data: {
       labels: labels,
       datasets: [
-        { label: 'Score', data: scores, borderColor: '#00b4ff', backgroundColor: 'rgba(0,180,255,0.08)', borderWidth: 2.5, pointBackgroundColor: '#00b4ff', pointRadius: 5, tension: 0.3 },
+        { label: 'Score', data: scores, borderColor: '#00b4ff', backgroundColor: 'rgba(0,180,255,0.08)', borderWidth: 2.5, pointBackgroundColor: pointColors, pointRadius: 5, tension: 0.3, segment: { borderColor: function(ctx) { var i = ctx.p0DataIndex; return (p.weeks[i] && p.weeks[i].pushing === false) || (p.weeks[i+1] && p.weeks[i+1].pushing === false) ? NP_COLOR : '#00b4ff'; } } },
         { label: '20M Goal', data: goal, borderColor: '#ff3264', borderWidth: 1.5, borderDash: [6, 4], pointRadius: 0 }
       ]
     },
@@ -180,16 +186,20 @@ function loadPlayer(name) {
     type: 'line',
     data: {
       labels: labels,
-      datasets: [{ label: 'Rank', data: ranks.map(function (r) { return r || null; }), borderColor: '#ffc800', backgroundColor: 'rgba(255,200,0,0.08)', borderWidth: 2.5, pointBackgroundColor: '#ffc800', pointStyle: 'diamond', pointRadius: 6, tension: 0.3 }]
+      datasets: [{ label: 'Rank', data: ranks.map(function (r) { return r || null; }), borderColor: '#ffc800', backgroundColor: 'rgba(255,200,0,0.08)', borderWidth: 2.5, pointBackgroundColor: rankPointColors, pointStyle: 'diamond', pointRadius: 6, tension: 0.3 }]
     },
     options: { ...chartDefaults, scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, reverse: true, min: 1, max: maxRank } } }
   });
 
   var tbody = document.getElementById('weekTableBody');
   tbody.innerHTML = p.weeks.map(function (w) {
-    var labelHtml = w.label + (w.inProgress ? ' <span class="in-progress-label">live</span>' : '');
-    return '<tr><td>' + labelHtml + '</td><td class="week-score">' + (w.score ? w.score.toLocaleString() : '-') + '</td><td class="rank-val">' + (w.rank || '-') + '</td><td class="' + (w.score >= 20000000 ? 'goal-yes' : 'goal-no') + '">' + (w.score >= 20000000 ? '&#9733; YES' : '&#10007; NO') + '</td></tr>';
+    var npTag = w.pushing === false ? ' *' : '';
+    var npStyle = w.pushing === false ? ' style="color:' + NP_COLOR + '"' : '';
+    var labelHtml = w.label + npTag + (w.inProgress ? ' <span class="in-progress-label">live</span>' : '');
+    return '<tr><td' + npStyle + '>' + labelHtml + '</td><td class="week-score"' + npStyle + '>' + (w.score ? w.score.toLocaleString() : '-') + '</td><td class="rank-val"' + npStyle + '>' + (w.rank || '-') + '</td><td class="' + (w.score >= 20000000 ? 'goal-yes' : 'goal-no') + '">' + (w.score >= 20000000 ? '&#9733; YES' : '&#10007; NO') + '</td></tr>';
   }).join('');
+  var hasNP = p.weeks.some(function (w) { return w.pushing === false; });
+  document.getElementById('npFootnote').style.display = hasNP ? '' : 'none';
 
   renderDailyChart(name, selectedDay);
 }
@@ -208,7 +218,8 @@ function renderDailyChart(playerName, day) {
   var pd = dailyData.players[playerName];
   var scores = pd[day] || [];
   var labels = dailyData.weekOrder.map(function (w) {
-    return w.replace(/ - .+/, '').replace(/(\w+)\s+(\d+)/, function (_, m, d) { return m.substring(0, 3) + ' ' + d; });
+    var short = w.replace(/ - .+/, '').replace(/(\w+)\s+(\d+)/, function (_, m, d) { return m.substring(0, 3) + ' ' + d; });
+    return notPushingWeeks.has(w) ? short + ' *' : short;
   });
   var avg = scores.reduce(function (a, b) { return a + b; }, 0) / (scores.filter(function (s) { return s > 0; }).length || 1);
   var avgLine = scores.map(function () { return avg; });
@@ -219,7 +230,7 @@ function renderDailyChart(playerName, day) {
     data: {
       labels: labels,
       datasets: [
-        { label: day + ' Score', data: scores, backgroundColor: scores.map(function (s) { return s >= 4000000 ? 'rgba(0,255,180,0.6)' : s > 0 ? 'rgba(0,180,255,0.5)' : 'rgba(107,107,136,0.2)'; }), borderColor: scores.map(function (s) { return s >= 4000000 ? '#00ffb4' : s > 0 ? '#00b4ff' : '#2a2a3a'; }), borderWidth: 1.5, borderRadius: 4 },
+        { label: day + ' Score', data: scores, backgroundColor: scores.map(function (s, i) { var wk = dailyData.weekOrder[i]; if (notPushingWeeks.has(wk)) return NP_BG; return s >= 4000000 ? 'rgba(0,255,180,0.6)' : s > 0 ? 'rgba(0,180,255,0.5)' : 'rgba(107,107,136,0.2)'; }), borderColor: scores.map(function (s, i) { var wk = dailyData.weekOrder[i]; if (notPushingWeeks.has(wk)) return NP_COLOR; return s >= 4000000 ? '#00ffb4' : s > 0 ? '#00b4ff' : '#2a2a3a'; }), borderWidth: 1.5, borderRadius: 4 },
         { label: 'Average', data: avgLine, type: 'line', borderColor: '#ffc800', borderWidth: 2, borderDash: [6, 4], pointRadius: 0, fill: false }
       ]
     },
@@ -245,6 +256,7 @@ async function init() {
     var data = await loadWPXData();
     players = data.players;
     dailyData = data.dailyData;
+    notPushingWeeks = data.notPushingWeeks || new Set();
     var sel = document.getElementById('playerSelect');
     sel.innerHTML = data.playerList.sort().map(function (name) {
       return '<option value="' + name.replace(/"/g, '&quot;') + '">' + name + '</option>';
