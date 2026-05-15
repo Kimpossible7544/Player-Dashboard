@@ -114,12 +114,16 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 24px
 <div class="section-title">Projected Team Leaderboard (Next Week)</div>
 <div class="leaderboard"><div class="lb-header">Player &middot; Projected Score &middot; Trend</div><div id="leaderboard"></div></div>
 </div>
+<div id="npFootnote" style="display:none;color:#ff7832;font-size:0.78rem;margin-top:10px;letter-spacing:0.5px;">* = Not pushing to win this week</div>
 </div>
 <script>
 var players = {};
+var notPushingWeeks = new Set();
 var futureLabels = ["Week +1","Week +2","Week +3","Week +4"];
 var projChart = null, barChart = null, trendChart = null;
 var GOAL = 20000000;
+var NP_COLOR = '#ff7832';
+var NP_BG = 'rgba(255,120,50,0.15)';
 
 function project(weeks, numWeeks) {
   var actual = weeks.filter(function (w) { return w.score > 0; });
@@ -179,7 +183,8 @@ function loadPlayer(name) {
     '<div class="stat-card c4"><div class="stat-label">Best Week</div><div class="stat-value v4">' + fmtM(bestWeek) + '</div></div>' +
     '<div class="stat-card c5"><div class="stat-label">Worst Week</div><div class="stat-value v5">' + fmtM(worstWeek) + '</div></div>';
 
-  var allLabels = sortedWeeks.map(function (w) { return w.label; }).concat(projScores.map(function (_, i) { return futureLabels[i] || 'Week +' + (i + 1); }));
+  var allLabels = sortedWeeks.map(function (w) { return w.pushing === false ? w.label + ' *' : w.label; }).concat(projScores.map(function (_, i) { return futureLabels[i] || 'Week +' + (i + 1); }));
+  var scorePointColors = sortedWeeks.map(function (w) { return w.pushing === false ? NP_COLOR : '#00b4ff'; }).concat(projScores.map(function () { return '#b464ff'; }));
   var actualData = sortedWeeks.map(function (w) { return w.score || null; });
   var projData = sortedWeeks.map(function () { return null; }).concat(projScores);
   if (actualData.length > 0) {
@@ -204,7 +209,7 @@ function loadPlayer(name) {
     data: {
       labels: allLabels,
       datasets: [
-        { label: 'Actual Score', data: actualData, borderColor: '#00b4ff', backgroundColor: 'rgba(0,180,255,0.08)', borderWidth: 2.5, pointBackgroundColor: '#00b4ff', pointRadius: 5, tension: 0.3, spanGaps: false },
+        { label: 'Actual Score', data: actualData, borderColor: '#00b4ff', backgroundColor: 'rgba(0,180,255,0.08)', borderWidth: 2.5, pointBackgroundColor: scorePointColors, pointRadius: 5, tension: 0.3, spanGaps: false },
         { label: 'Projected', data: projData, borderColor: '#b464ff', backgroundColor: 'rgba(180,100,255,0.08)', borderWidth: 2.5, borderDash: [8, 4], pointBackgroundColor: '#b464ff', pointStyle: 'star', pointRadius: 7, tension: 0.3, spanGaps: false },
         { label: '20M Goal', data: goalData, borderColor: '#ff3264', borderWidth: 1.5, borderDash: [4, 4], pointRadius: 0 }
       ]
@@ -215,12 +220,12 @@ function loadPlayer(name) {
   barChart = new Chart(document.getElementById('barChart'), {
     type: 'bar',
     data: {
-      labels: sortedWeeks.map(function (w) { return w.label; }),
+      labels: sortedWeeks.map(function (w) { return w.pushing === false ? w.label + ' *' : w.label; }),
       datasets: [{
         label: 'Weekly Score',
         data: sortedWeeks.map(function (w) { return w.score || 0; }),
-        backgroundColor: sortedWeeks.map(function (w) { return w.score >= GOAL ? 'rgba(255,200,0,0.7)' : w.score > 0 ? 'rgba(0,180,255,0.7)' : 'rgba(42,42,58,0.5)'; }),
-        borderColor: sortedWeeks.map(function (w) { return w.score >= GOAL ? '#ffc800' : w.score > 0 ? '#00b4ff' : '#2a2a3a'; }),
+        backgroundColor: sortedWeeks.map(function (w) { if (w.pushing === false) return NP_BG; return w.score >= GOAL ? 'rgba(255,200,0,0.7)' : w.score > 0 ? 'rgba(0,180,255,0.7)' : 'rgba(42,42,58,0.5)'; }),
+        borderColor: sortedWeeks.map(function (w) { if (w.pushing === false) return NP_COLOR; return w.score >= GOAL ? '#ffc800' : w.score > 0 ? '#00b4ff' : '#2a2a3a'; }),
         borderWidth: 1, borderRadius: 4
       }]
     },
@@ -234,7 +239,7 @@ function loadPlayer(name) {
   trendChart = new Chart(document.getElementById('trendChart'), {
     type: 'line',
     data: {
-      labels: sortedWeeks.map(function (w) { return w.label; }),
+      labels: sortedWeeks.map(function (w) { return w.pushing === false ? w.label + ' *' : w.label; }),
       datasets: [
         { label: '3-Week Rolling Avg', data: rolling, borderColor: '#00ffb4', backgroundColor: 'rgba(0,255,180,0.06)', borderWidth: 2.5, pointBackgroundColor: '#00ffb4', pointRadius: 4, tension: 0.4, spanGaps: false },
         { label: 'Individual Weeks', data: sortedWeeks.map(function (w) { return w.score || null; }), borderColor: 'rgba(0,180,255,0.4)', backgroundColor: 'transparent', borderWidth: 1, borderDash: [3, 3], pointRadius: 3, tension: 0, spanGaps: false }
@@ -246,7 +251,9 @@ function loadPlayer(name) {
   var rows = sortedWeeks.map(function (w) {
     var vsAvg = avgScore > 0 ? ((w.score - avgScore) / avgScore * 100) : 0;
     var vsStr = w.score > 0 ? (vsAvg >= 0 ? '<span style="color:var(--accent)">+' + vsAvg.toFixed(1) + '%</span>' : '<span style="color:var(--red)">' + vsAvg.toFixed(1) + '%</span>') : '-';
-    return '<tr><td>' + w.label + '</td><td class="actual-score">' + (w.score ? w.score.toLocaleString() : '-') + '</td><td class="' + (w.score >= GOAL ? 'goal-yes' : w.score > 0 ? 'goal-no' : '') + '">' + (w.score >= GOAL ? '&#9733; YES' : w.score > 0 ? '&#10007; NO' : '-') + '</td><td>' + vsStr + '</td></tr>';
+    var npTag = w.pushing === false ? ' *' : '';
+    var npStyle = w.pushing === false ? ' style="color:' + NP_COLOR + '"' : '';
+    return '<tr><td' + npStyle + '>' + w.label + npTag + '</td><td class="actual-score"' + npStyle + '>' + (w.score ? w.score.toLocaleString() : '-') + '</td><td class="' + (w.score >= GOAL ? 'goal-yes' : w.score > 0 ? 'goal-no' : '') + '">' + (w.score >= GOAL ? '&#9733; YES' : w.score > 0 ? '&#10007; NO' : '-') + '</td><td>' + vsStr + '</td></tr>';
   }).join('');
   var projRows = projScores.map(function (s, i) {
     return '<tr class="proj-row"><td>' + (futureLabels[i] || 'Week +' + (i + 1)) + '</td><td class="proj-score">' + s.toLocaleString() + '</td><td class="goal-proj">' + (s >= GOAL ? '&#9733; LIKELY' : '? TBD') + '</td><td>-</td></tr>';
@@ -280,6 +287,7 @@ async function init() {
   try {
     var data = await loadWPXData();
     players = data.players;
+    notPushingWeeks = data.notPushingWeeks || new Set();
     var sel = document.getElementById('playerSel');
     sel.innerHTML = data.playerList.sort().map(function (name) {
       return '<option value="' + name.replace(/"/g, '&quot;') + '">' + name + '</option>';
@@ -291,6 +299,8 @@ async function init() {
 
     loadPlayer(sel.value);
     buildLeaderboard();
+    var hasNP = notPushingWeeks.size > 0;
+    document.getElementById('npFootnote').style.display = hasNP ? '' : 'none';
     document.getElementById('projWeeks').addEventListener('change', buildLeaderboard);
   } catch (e) {
     document.getElementById('loadingArea').innerHTML =
