@@ -53,6 +53,7 @@ tbody tr:hover{background:rgba(0,255,180,0.06);cursor:pointer;}
 .avg{color:var(--accent3);font-family:'Courier New',monospace;}
 .missed{color:var(--red);font-weight:700;}
 .empty{color:var(--border);}
+th.np-week{color:#ff7832 !important;border-bottom-color:#ff7832 !important;}
 .in-progress{font-style:italic;opacity:0.85;}
 th.in-progress-col{position:relative;}
 th.in-progress-col::before{content:'\25CF';color:var(--accent);margin-right:4px;font-size:0.6rem;vertical-align:middle;}
@@ -91,11 +92,14 @@ th.in-progress-col::before{content:'\25CF';color:var(--accent);margin-right:4px;
 </tbody>
 </table>
 </div>
+<div id="npFootnote" style="display:none;color:#ff7832;font-size:0.78rem;margin-top:10px;letter-spacing:0.5px;">* = Not pushing to win this week</div>
 </div>
 <script>
 var sortDir = {};
 var weekLabels = [];
+var notPushingWeeks = new Set();
 var GOAL = 20000000;
+var NP_COLOR = '#ff7832';
 
 function fmt(n) {
   return n ? Math.round(n).toLocaleString() : '\u2014';
@@ -120,7 +124,9 @@ function buildHeaders(weeks, currentWeekLabel) {
   ];
   weeks.forEach(function (w) {
     var cls = w === currentWeekLabel ? 'in-progress-col' : '';
-    cols.push({ label: w, cls: cls });
+    var npCls = notPushingWeeks.has(w) ? ' np-week' : '';
+    var npTag = notPushingWeeks.has(w) ? ' *' : '';
+    cols.push({ label: w + npTag, cls: cls + npCls });
   });
   hr.innerHTML = cols.map(function (c, i) {
     return '<th class="' + c.cls + '" onclick="sortTable(' + i + ')">' + c.label + '</th>';
@@ -143,8 +149,11 @@ function buildRows(players, weeks) {
     html += '<td' + (p.missedWeekly > 0 ? ' class="missed"' : '') + '>' + p.missedWeekly + '</td>';
     p.weeks.forEach(function (w) {
       var ipCls = w.inProgress ? ' in-progress' : '';
+      var np = w.pushing === false;
       if (!w.score) {
         html += '<td class="empty' + ipCls + '">\u2014</td>';
+      } else if (np) {
+        html += '<td class="' + ipCls + '" style="color:' + NP_COLOR + ';font-family:Courier New,monospace">' + w.score.toLocaleString() + '</td>';
       } else if (w.score >= GOAL) {
         html += '<td class="goal-met' + ipCls + '">' + w.score.toLocaleString() + '</td>';
       } else {
@@ -197,8 +206,10 @@ async function init() {
   try {
     var data = await loadWPXData();
     weekLabels = data.weekLabels;
+    notPushingWeeks = data.notPushingWeeks || new Set();
     buildHeaders(weekLabels, data.currentWeekLabel);
     buildRows(data.players, weekLabels);
+    document.getElementById('npFootnote').style.display = notPushingWeeks.size > 0 ? '' : 'none';
     document.getElementById('lastUpdated').textContent = 'Data loaded \u2014 ' + new Date().toLocaleString();
     sortTable(0);
   } catch (e) {
