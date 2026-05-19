@@ -1,4 +1,4 @@
-// wpx_data.js — fetches and parses the WPX Excel file from GitHub Pages
+// wpx_data.js — fetches and parses the WPX Excel file from Dropbox
 // Serves wpx_standings.html, wpx_dashboard.html, and wpx_projections.html
 // Depends on SheetJS (xlsx.full.min.js) already loaded on the page.
 
@@ -46,13 +46,16 @@ function isWeekComplete(weekLabel) {
 async function loadWPXData() {
 
   // =========================================================
-  // EXCEL FILE LOCATION
+  // DROPBOX FILE LOCATION
   // =========================================================
-  // File is hosted directly in the GitHub repo root:
-  // https://kimpossible7544.github.io/Player-Dashboard/WPXFinal5.13.26.xlsm
+  // File is hosted on Dropbox. Keep the same filename (WPXStatsFinal.xlsm)
+  // and overwrite it each week — the share link stays stable.
+  // Use dl.dropboxusercontent.com to avoid CORS errors.
   // =========================================================
 
-  const EXCEL_FILE = "./WPXFinal5.13.26.xlsm";
+  const DROPBOX_URL =
+    "https://dl.dropboxusercontent.com/scl/fi/dx7xgqmjshf8hciso3uya/WPXStatsFinal.xlsm" +
+    "?rlkey=oyw14lm3fod48uxygykdnixar";
 
   const PLAYER_TRACKING_SHEET = "Player Tracking";
   const WEEK_SETTINGS_SHEET = "Week Settings";
@@ -83,18 +86,19 @@ async function loadWPXData() {
   let response;
 
   try {
-    response = await fetch(EXCEL_FILE);
+    response = await fetch(DROPBOX_URL);
   } catch (err) {
     console.error("[WPX] Fetch failed:", err);
 
     throw new Error(
-      "Could not fetch Excel file: " + err.message
+      "Could not reach Dropbox. Details: " + err.message
     );
   }
 
   if (!response.ok) {
     throw new Error(
-      `Excel fetch failed: ${response.status} ${response.statusText}`
+      `Dropbox returned ${response.status} ${response.statusText}. ` +
+      "Make sure the file is shared as 'Anyone with the link'."
     );
   }
 
