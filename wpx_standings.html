@@ -27,7 +27,11 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 24px
 .search-bar input{background:var(--panel);border:1px solid var(--border);color:var(--text);padding:10px 16px;border-radius:8px;font-size:0.9rem;width:280px;outline:none;font-family:inherit;transition:border-color 0.2s;}
 .search-bar input:focus{border-color:var(--accent);}
 .search-bar input::placeholder{color:var(--dim);}
-.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);}
+.table-wrap{overflow-x:scroll;border-radius:12px;border:1px solid var(--border);}
+.table-wrap::-webkit-scrollbar{height:10px;}
+.table-wrap::-webkit-scrollbar-track{background:var(--panel);border-radius:0 0 12px 12px;}
+.table-wrap::-webkit-scrollbar-thumb{background:var(--dim);border-radius:5px;}
+.table-wrap::-webkit-scrollbar-thumb:hover{background:var(--accent);}
 table{width:100%;border-collapse:collapse;font-size:0.82rem;}
 thead tr{background:var(--panel);}
 th{padding:12px 14px;text-align:left;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);border-bottom:2px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;}
