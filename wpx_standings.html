@@ -157,7 +157,7 @@ function buildRows(players, weeks) {
     html += '<td class="avg">' + fmt(p.weeklyAvg) + '</td>';
     html += '<td' + (p.missedDaily > 0 ? ' class="missed"' : '') + '>' + p.missedDaily + '</td>';
     html += '<td' + (p.missedWeekly > 0 ? ' class="missed"' : '') + '>' + p.missedWeekly + '</td>';
-    p.weeks.forEach(function (w) {
+    p.weeks.slice().reverse().forEach(function (w) {
       var ipCls = w.inProgress ? ' in-progress' : '';
       var np = w.pushing === false;
       var sh = w.serverHelp === true;
@@ -221,8 +221,9 @@ async function init() {
     weekLabels = data.weekLabels;
     notPushingWeeks = data.notPushingWeeks || new Set();
     serverHelpers = data.serverHelpers || new Map();
-    buildHeaders(weekLabels, data.currentWeekLabel);
-    buildRows(data.players, weekLabels);
+    var reversedWeeks = weekLabels.slice().reverse();
+    buildHeaders(reversedWeeks, data.currentWeekLabel);
+    buildRows(data.players, reversedWeeks);
     document.getElementById('npFootnote').style.display = notPushingWeeks.size > 0 ? '' : 'none';
     document.getElementById('shFootnote').style.display = serverHelpers.size > 0 ? '' : 'none';
     document.getElementById('lastUpdated').textContent = 'Data loaded \u2014 ' + new Date().toLocaleString();
