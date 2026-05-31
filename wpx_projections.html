@@ -227,6 +227,16 @@ function loadPlayer(name) {
     if (lastActual.length) projData[actualData.length - 1] = lastActual[lastActual.length - 1];
   }
   var goalData = allLabels.map(function () { return GOAL; });
+  var MAX_VISIBLE = 6;
+
+  // Build per-chart min labels for initial 6-week view
+  var allLabelsMin = allLabels.length > MAX_VISIBLE ? allLabels[allLabels.length - MAX_VISIBLE] : undefined;
+  var allLabelsMax = allLabels[allLabels.length - 1];
+
+  var barLabels = sortedWeeks.map(function (w) { if (w.serverHelp) return w.label + ' \u2020'; return w.pushing === false ? w.label + ' *' : w.label; });
+  var barMin = barLabels.length > MAX_VISIBLE ? barLabels[barLabels.length - MAX_VISIBLE] : undefined;
+  var barMax = barLabels[barLabels.length - 1];
+
   var cd = {
     responsive: true, maintainAspectRatio: false,
     plugins: {
@@ -237,13 +247,34 @@ function loadPlayer(name) {
         zoom: { wheel: { enabled: false }, pinch: { enabled: false }, mode: 'x' }
       }
     },
-   scales: {
-      x: { 
-        ticks: { color: '#6b6b88', font: { size: 10 } }, 
-        grid: { color: 'rgba(42,42,58,0.5)' },
-        min: allLabels.length > 6 ? allLabels[allLabels.length - 6] : undefined,
-        max: allLabels[allLabels.length - 1]
-      },
+    scales: {
+      x: { ticks: { color: '#6b6b88', font: { size: 10 } }, grid: { color: 'rgba(42,42,58,0.5)' }, min: allLabelsMin, max: allLabelsMax },
+      y: { ticks: { color: '#6b6b88', font: { size: 10 }, callback: function (v) { return v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : v; } }, grid: { color: 'rgba(42,42,58,0.5)' } }
+    }
+  };
+
+  var cdBar = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: cd.plugins.tooltip,
+      zoom: cd.plugins.zoom
+    },
+    scales: {
+      x: { ticks: { color: '#6b6b88', font: { size: 10 } }, grid: { color: 'rgba(42,42,58,0.5)' }, min: barMin, max: barMax },
+      y: { ticks: { color: '#6b6b88', font: { size: 10 }, callback: function (v) { return v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : v; } }, grid: { color: 'rgba(42,42,58,0.5)' } }
+    }
+  };
+
+  var cdTrend = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: cd.plugins.legend,
+      tooltip: cd.plugins.tooltip,
+      zoom: cd.plugins.zoom
+    },
+    scales: {
+      x: { ticks: { color: '#6b6b88', font: { size: 10 } }, grid: { color: 'rgba(42,42,58,0.5)' }, min: barMin, max: barMax },
       y: { ticks: { color: '#6b6b88', font: { size: 10 }, callback: function (v) { return v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : v; } }, grid: { color: 'rgba(42,42,58,0.5)' } }
     }
   };
@@ -273,7 +304,7 @@ function loadPlayer(name) {
         borderWidth: 1, borderRadius: 4
       }]
     },
-    options: { ...cd, plugins: { ...cd.plugins, legend: { display: false } } }
+    options: cdBar
   });
   var rolling = sortedWeeks.map(function (_, i, arr) {
     var slice = arr.slice(Math.max(0, i - 2), i + 1).filter(function (w) { return w.score > 0; });
@@ -289,7 +320,7 @@ function loadPlayer(name) {
         { label: 'Individual Weeks', data: sortedWeeks.map(function (w) { return w.score || null; }), borderColor: 'rgba(0,180,255,0.4)', backgroundColor: 'transparent', borderWidth: 1, borderDash: [3, 3], pointRadius: 3, tension: 0, spanGaps: false }
       ]
     },
-    options: { ...cd, plugins: { ...cd.plugins } }
+    options: cdTrend
   });
   var wt = document.getElementById('weekTable');
   var rows = sortedWeeks.map(function (w) {
@@ -360,3 +391,4 @@ async function init() {
 
 window.addEventListener('DOMContentLoaded', init);
 </script></body></html>
+
