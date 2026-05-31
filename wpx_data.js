@@ -283,7 +283,7 @@ async function loadWPXData() {
         helpPlayers.split(",").forEach(name => {
           const trimmed = name.trim();
           if (trimmed) {
-            const key = trimmed + "|||" + String(weekLabel).trim();
+            const key = trimmed.toLowerCase() + "|||" + String(weekLabel).trim();
             serverHelpers.set(key, true);
           }
         });
@@ -395,7 +395,7 @@ async function loadWPXData() {
 
     player.weeks.forEach(week => {
 
-      const key = player.name + "|||" + week.label;
+      const key = player.name.toLowerCase() + "|||" + week.label;
       week.serverHelp = serverHelpers.has(key);
 
     });
