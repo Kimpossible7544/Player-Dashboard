@@ -117,7 +117,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 24px
 <div class="leaderboard"><div class="lb-header">Player &middot; Projected Score &middot; Trend</div><div id="leaderboard"></div></div>
 </div>
 <div id="npFootnote" style="display:none;color:#ff7832;font-size:0.78rem;margin-top:10px;letter-spacing:0.5px;">* = Not pushing to win this week</div>
-<div id="shFootnote" style="display:none;color:#00e5ff;font-size:0.78rem;margin-top:4px;letter-spacing:0.5px;">&#x1F396;&#xFE0F; = Voluntarily helped the server this week (scores may be lower than usual)</div>
+<div id="shFootnote" style="display:none;color:#00e5ff;font-size:0.78rem;margin-top:4px;letter-spacing:0.5px;"><span style="color:#ff3264">&dagger;</span> = Voluntarily helped the server this week (scores may be lower than usual)</div>
 </div>
 <script>
 var players = {};
@@ -189,7 +189,7 @@ function loadPlayer(name) {
     '<div class="stat-card c4"><div class="stat-label">Best Week</div><div class="stat-value v4">' + fmtM(bestWeek) + '</div></div>' +
     '<div class="stat-card c5"><div class="stat-label">Worst Week</div><div class="stat-value v5">' + fmtM(worstWeek) + '</div></div>';
 
-  var allLabels = sortedWeeks.map(function (w) { if (w.serverHelp) return w.label + ' \uD83C\uDF96\uFE0F'; return w.pushing === false ? w.label + ' *' : w.label; }).concat(projScores.map(function (_, i) { return futureLabels[i] || 'Week +' + (i + 1); }));
+  var allLabels = sortedWeeks.map(function (w) { if (w.serverHelp) return w.label + ' \u2020'; return w.pushing === false ? w.label + ' *' : w.label; }).concat(projScores.map(function (_, i) { return futureLabels[i] || 'Week +' + (i + 1); }));
   var scorePointColors = sortedWeeks.map(function (w) { if (w.serverHelp) return SH_COLOR; return w.pushing === false ? NP_COLOR : '#00b4ff'; }).concat(projScores.map(function () { return '#b464ff'; }));
   var actualData = sortedWeeks.map(function (w) { return w.score || null; });
   var projData = sortedWeeks.map(function () { return null; }).concat(projScores);
@@ -226,7 +226,7 @@ function loadPlayer(name) {
   barChart = new Chart(document.getElementById('barChart'), {
     type: 'bar',
     data: {
-      labels: sortedWeeks.map(function (w) { if (w.serverHelp) return w.label + ' \uD83C\uDF96\uFE0F'; return w.pushing === false ? w.label + ' *' : w.label; }),
+      labels: sortedWeeks.map(function (w) { if (w.serverHelp) return w.label + ' \u2020'; return w.pushing === false ? w.label + ' *' : w.label; }),
       datasets: [{
         label: 'Weekly Score',
         data: sortedWeeks.map(function (w) { return w.score || 0; }),
@@ -245,7 +245,7 @@ function loadPlayer(name) {
   trendChart = new Chart(document.getElementById('trendChart'), {
     type: 'line',
     data: {
-      labels: sortedWeeks.map(function (w) { if (w.serverHelp) return w.label + ' \uD83C\uDF96\uFE0F'; return w.pushing === false ? w.label + ' *' : w.label; }),
+      labels: sortedWeeks.map(function (w) { if (w.serverHelp) return w.label + ' \u2020'; return w.pushing === false ? w.label + ' *' : w.label; }),
       datasets: [
         { label: '3-Week Rolling Avg', data: rolling, borderColor: '#00ffb4', backgroundColor: 'rgba(0,255,180,0.06)', borderWidth: 2.5, pointBackgroundColor: '#00ffb4', pointRadius: 4, tension: 0.4, spanGaps: false },
         { label: 'Individual Weeks', data: sortedWeeks.map(function (w) { return w.score || null; }), borderColor: 'rgba(0,180,255,0.4)', backgroundColor: 'transparent', borderWidth: 1, borderDash: [3, 3], pointRadius: 3, tension: 0, spanGaps: false }
@@ -259,7 +259,7 @@ function loadPlayer(name) {
     var vsStr = w.score > 0 ? (vsAvg >= 0 ? '<span style="color:var(--accent)">+' + vsAvg.toFixed(1) + '%</span>' : '<span style="color:var(--red)">' + vsAvg.toFixed(1) + '%</span>') : '-';
     var sh = w.serverHelp === true;
     var np = w.pushing === false;
-    var tag = sh ? ' \uD83C\uDF96\uFE0F' : (np ? ' *' : '');
+    var tag = sh ? ' \u2020' : (np ? ' *' : '');
     var rowStyle = sh ? ' style="color:' + SH_COLOR + '"' : (np ? ' style="color:' + NP_COLOR + '"' : '');
     var badges = '';
     if (w.inProgress) badges += ' <span class="in-progress-label">live</span>';
