@@ -227,11 +227,13 @@ function selectDay(day) {
 function renderDailyChart(playerName, day) {
   if (!dailyData || !dailyData.players[playerName]) return;
   var pd = dailyData.players[playerName];
-  var scores = pd[day] || [];
+  var allScores = pd[day] || [];
+  var recentOrder = dailyData.weekOrder.slice(-6);
+  var scores = allScores.slice(-6);
   var p = players[playerName];
   var shWeeks = new Set();
   if (p) p.weeks.forEach(function (w) { if (w.serverHelp) shWeeks.add(w.label); });
-  var labels = dailyData.weekOrder.map(function (w) {
+  var labels = recentOrder.map(function (w) {
     var short = w.replace(/ - .+/, '').replace(/(\w+)\s+(\d+)/, function (_, m, d) { return m.substring(0, 3) + ' ' + d; });
     if (shWeeks.has(w)) return short + ' \u2020';
     return notPushingWeeks.has(w) ? short + ' *' : short;
@@ -245,7 +247,7 @@ function renderDailyChart(playerName, day) {
     data: {
       labels: labels,
       datasets: [
-        { label: day + ' Score', data: scores, backgroundColor: scores.map(function (s, i) { var wk = dailyData.weekOrder[i]; if (shWeeks.has(wk)) return SH_BG; if (notPushingWeeks.has(wk)) return NP_BG; return s >= 4000000 ? 'rgba(0,255,180,0.6)' : s > 0 ? 'rgba(0,180,255,0.5)' : 'rgba(107,107,136,0.2)'; }), borderColor: scores.map(function (s, i) { var wk = dailyData.weekOrder[i]; if (shWeeks.has(wk)) return SH_COLOR; if (notPushingWeeks.has(wk)) return NP_COLOR; return s >= 4000000 ? '#00ffb4' : s > 0 ? '#00b4ff' : '#2a2a3a'; }), borderWidth: 1.5, borderRadius: 4 },
+        { label: day + ' Score', data: scores, backgroundColor: scores.map(function (s, i) { var wk = recentOrder[i]; if (shWeeks.has(wk)) return SH_BG; if (notPushingWeeks.has(wk)) return NP_BG; return s >= 4000000 ? 'rgba(0,255,180,0.6)' : s > 0 ? 'rgba(0,180,255,0.5)' : 'rgba(107,107,136,0.2)'; }), borderColor: scores.map(function (s, i) { var wk = recentOrder[i]; if (shWeeks.has(wk)) return SH_COLOR; if (notPushingWeeks.has(wk)) return NP_COLOR; return s >= 4000000 ? '#00ffb4' : s > 0 ? '#00b4ff' : '#2a2a3a'; }), borderWidth: 1.5, borderRadius: 4 },
         { label: 'Average', data: avgLine, type: 'line', borderColor: '#ffc800', borderWidth: 2, borderDash: [6, 4], pointRadius: 0, fill: false }
       ]
     },
