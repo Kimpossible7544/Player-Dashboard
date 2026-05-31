@@ -152,7 +152,8 @@ function buildRows(players, weeks) {
     var enc = encodeURIComponent(name);
     html += '<tr onclick="location.href=\'wpx_dashboard.html?player=' + enc + '\'">';
     html += '<td class="' + rankClass(p.overallRank) + '">' + (p.overallRank || '\u2014') + '</td>';
-    html += '<td class="player-name"><a href="wpx_dashboard.html?player=' + enc + '">' + p.name + '</a></td>';
+    var hasSH = p.weeks.some(function (w) { return w.serverHelp === true; });
+    html += '<td class="player-name"><a href="wpx_dashboard.html?player=' + enc + '">' + p.name + (hasSH ? '<span class="sh-icon" title="Helped the server">&dagger;</span>' : '') + '</a></td>';
     html += '<td class="score">' + fmt(p.totalScore) + '</td>';
     html += '<td class="avg">' + fmt(p.weeklyAvg) + '</td>';
     html += '<td' + (p.missedDaily > 0 ? ' class="missed"' : '') + '>' + p.missedDaily + '</td>';
