@@ -114,7 +114,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:16px 2
 <tbody id="weekTableBody"></tbody></table>
 </div>
 <div id="npFootnote" style="display:none;color:#ff7832;font-size:0.78rem;margin-top:8px;letter-spacing:0.5px;">* = Not pushing to win this week</div>
-<div id="shFootnote" style="display:none;color:#00e5ff;font-size:0.78rem;margin-top:4px;letter-spacing:0.5px;">&#x1F396;&#xFE0F; = Voluntarily helped the server this week</div>
+<div id="shFootnote" style="display:none;color:#00e5ff;font-size:0.78rem;margin-top:4px;letter-spacing:0.5px;"><span style="color:#ff3264">&dagger;</span> = Voluntarily helped the server this week</div>
 </div>
 </div>
 <script>
@@ -144,7 +144,7 @@ function loadPlayer(name) {
     '<div class="stat-card c6"><div class="stat-label">Missed Weekly</div><div class="stat-value red">' + p.missedWeekly + '</div></div>' +
     '<div class="stat-card c7"><div class="stat-label">20M Weeks</div><div class="stat-value accent">' + p.weeks.filter(function (w) { return w.score >= 20000000; }).length + '</div></div>';
 
-  var labels = p.weeks.map(function (w) { if (w.serverHelp) return w.label + ' \uD83C\uDF96\uFE0F'; return w.pushing === false ? w.label + ' *' : w.label; });
+  var labels = p.weeks.map(function (w) { if (w.serverHelp) return w.label + ' \u2020'; return w.pushing === false ? w.label + ' *' : w.label; });
   var scores = p.weeks.map(function (w) { return w.score; });
   var ranks = p.weeks.map(function (w) { return w.rank; });
   var goal = p.weeks.map(function () { return 20000000; });
@@ -199,7 +199,7 @@ function loadPlayer(name) {
   tbody.innerHTML = p.weeks.map(function (w) {
     var sh = w.serverHelp === true;
     var np = w.pushing === false;
-    var tag = sh ? ' \uD83C\uDF96\uFE0F' : (np ? ' *' : '');
+    var tag = sh ? ' \u2020' : (np ? ' *' : '');
     var rowStyle = sh ? ' style="color:' + SH_COLOR + '"' : (np ? ' style="color:' + NP_COLOR + '"' : '');
     var badges = '';
     if (w.inProgress) badges += ' <span class="in-progress-label">live</span>';
@@ -233,7 +233,7 @@ function renderDailyChart(playerName, day) {
   if (p) p.weeks.forEach(function (w) { if (w.serverHelp) shWeeks.add(w.label); });
   var labels = dailyData.weekOrder.map(function (w) {
     var short = w.replace(/ - .+/, '').replace(/(\w+)\s+(\d+)/, function (_, m, d) { return m.substring(0, 3) + ' ' + d; });
-    if (shWeeks.has(w)) return short + ' \uD83C\uDF96\uFE0F';
+    if (shWeeks.has(w)) return short + ' \u2020';
     return notPushingWeeks.has(w) ? short + ' *' : short;
   });
   var avg = scores.reduce(function (a, b) { return a + b; }, 0) / (scores.filter(function (s) { return s > 0; }).length || 1);
