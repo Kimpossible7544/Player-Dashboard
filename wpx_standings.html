@@ -59,6 +59,9 @@ tbody tr:hover{background:rgba(0,255,180,0.06);cursor:pointer;}
 .empty{color:var(--border);}
 th.np-week{color:#ff7832 !important;border-bottom-color:#ff7832 !important;}
 .in-progress{font-style:italic;opacity:0.85;}
+.server-help{color:#00e5ff !important;font-family:'Courier New',monospace;position:relative;}
+.server-help .sh-icon{font-size:0.7rem;margin-left:3px;cursor:help;}
+th.sh-week{color:#00e5ff !important;border-bottom-color:#00e5ff !important;}
 th.in-progress-col{position:relative;}
 th.in-progress-col::before{content:'\25CF';color:var(--accent);margin-right:4px;font-size:0.6rem;vertical-align:middle;}
 .loading{text-align:center;padding:60px 20px;color:var(--dim);font-size:1rem;letter-spacing:1px;}
@@ -97,13 +100,16 @@ th.in-progress-col::before{content:'\25CF';color:var(--accent);margin-right:4px;
 </table>
 </div>
 <div id="npFootnote" style="display:none;color:#ff7832;font-size:0.78rem;margin-top:10px;letter-spacing:0.5px;">* = Not pushing to win this week</div>
+<div id="shFootnote" style="display:none;color:#00e5ff;font-size:0.78rem;margin-top:6px;letter-spacing:0.5px;">&#x1F6E1;&#xFE0F; = Voluntarily helped the server this week (scores may be lower than usual)</div>
 </div>
 <script>
 var sortDir = {};
 var weekLabels = [];
 var notPushingWeeks = new Set();
+var serverHelpers = new Map();
 var GOAL = 20000000;
 var NP_COLOR = '#ff7832';
+var SH_COLOR = '#00e5ff';
 
 function fmt(n) {
   return n ? Math.round(n).toLocaleString() : '\u2014';
@@ -154,8 +160,11 @@ function buildRows(players, weeks) {
     p.weeks.forEach(function (w) {
       var ipCls = w.inProgress ? ' in-progress' : '';
       var np = w.pushing === false;
+      var sh = w.serverHelp === true;
       if (!w.score) {
         html += '<td class="empty' + ipCls + '">\u2014</td>';
+      } else if (sh) {
+        html += '<td class="server-help' + ipCls + '" title="Helped the server this week">' + w.score.toLocaleString() + '<span class="sh-icon">\uD83D\uDEE1\uFE0F</span></td>';
       } else if (np) {
         html += '<td class="' + ipCls + '" style="color:' + NP_COLOR + ';font-family:Courier New,monospace">' + w.score.toLocaleString() + '</td>';
       } else if (w.score >= GOAL) {
@@ -211,9 +220,11 @@ async function init() {
     var data = await loadWPXData();
     weekLabels = data.weekLabels;
     notPushingWeeks = data.notPushingWeeks || new Set();
+    serverHelpers = data.serverHelpers || new Map();
     buildHeaders(weekLabels, data.currentWeekLabel);
     buildRows(data.players, weekLabels);
     document.getElementById('npFootnote').style.display = notPushingWeeks.size > 0 ? '' : 'none';
+    document.getElementById('shFootnote').style.display = serverHelpers.size > 0 ? '' : 'none';
     document.getElementById('lastUpdated').textContent = 'Data loaded \u2014 ' + new Date().toLocaleString();
     sortTable(0);
   } catch (e) {
