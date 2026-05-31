@@ -252,6 +252,7 @@ async function loadWPXData() {
   // =========================================================
 
   const notPushingWeeks = new Set();
+  const serverHelpers = new Map(); // key: "PlayerName|||WeekLabel"
 
   if (workbook.SheetNames.includes(WEEK_SETTINGS_SHEET)) {
 
@@ -275,11 +276,28 @@ async function loadWPXData() {
       if (weekLabel && pushing === "N") {
         notPushingWeeks.add(String(weekLabel).trim());
       }
+
+      // Column C: comma-separated player names who helped the server
+      const helpPlayers = String(wsRows[r][2] || "").trim();
+      if (weekLabel && helpPlayers) {
+        helpPlayers.split(",").forEach(name => {
+          const trimmed = name.trim();
+          if (trimmed) {
+            const key = trimmed + "|||" + String(weekLabel).trim();
+            serverHelpers.set(key, true);
+          }
+        });
+      }
     }
 
     console.log(
       "[WPX] Not-pushing weeks:",
       Array.from(notPushingWeeks)
+    );
+
+    console.log(
+      "[WPX] Server-help entries:",
+      serverHelpers.size
     );
   }
 
@@ -369,41 +387,6 @@ async function loadWPXData() {
 
       });
     });
-  }
-
-  // =========================================================
-  // READ SERVER HELP SHEET
-  // =========================================================
-
-  const SERVER_HELP_SHEET = "Server Help";
-  const serverHelpers = new Map(); // key: "PlayerName|||WeekLabel"
-
-  if (workbook.SheetNames.includes(SERVER_HELP_SHEET)) {
-
-    const shRows = XLSX.utils.sheet_to_json(
-      workbook.Sheets[SERVER_HELP_SHEET],
-      {
-        header: 1,
-        defval: null
-      }
-    );
-
-    for (let r = 1; r < shRows.length; r++) {
-
-      const playerName = shRows[r][0];
-      const weekLabel  = shRows[r][1];
-
-      if (playerName && weekLabel) {
-        const key = String(playerName).trim() +
-          "|||" + String(weekLabel).trim();
-        serverHelpers.set(key, true);
-      }
-    }
-
-    console.log(
-      "[WPX] Server-help entries:",
-      serverHelpers.size
-    );
   }
 
   // Add serverHelp flags to player weeks
