@@ -100,7 +100,7 @@ th.in-progress-col::before{content:'\25CF';color:var(--accent);margin-right:4px;
 </table>
 </div>
 <div id="npFootnote" style="display:none;color:#ff7832;font-size:0.78rem;margin-top:10px;letter-spacing:0.5px;">* = Not pushing to win this week</div>
-<div id="shFootnote" style="display:none;color:#00e5ff;font-size:0.78rem;margin-top:6px;letter-spacing:0.5px;">&#x1F6E1;&#xFE0F; = Voluntarily helped another alliance this week (scores may be lower than usual)</div>
+<div id="shFootnote" style="display:none;color:#00e5ff;font-size:0.78rem;margin-top:6px;letter-spacing:0.5px;">&#x1F6E1;&#xFE0F; = Voluntarily helped the server this week (scores may be lower than usual)</div>
 </div>
 <script>
 var sortDir = {};
@@ -164,7 +164,7 @@ function buildRows(players, weeks) {
       if (!w.score) {
         html += '<td class="empty' + ipCls + '">\u2014</td>';
       } else if (sh) {
-        html += '<td class="server-help' + ipCls + '" title="Helped another alliance this week">' + w.score.toLocaleString() + '<span class="sh-icon">\uD83D\uDEE1\uFE0F</span></td>';
+        html += '<td class="server-help' + ipCls + '" title="Helped the server this week">' + w.score.toLocaleString() + '<span class="sh-icon">\uD83D\uDEE1\uFE0F</span></td>';
       } else if (np) {
         html += '<td class="' + ipCls + '" style="color:' + NP_COLOR + ';font-family:Courier New,monospace">' + w.score.toLocaleString() + '</td>';
       } else if (w.score >= GOAL) {

@@ -114,7 +114,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:16px 2
 <tbody id="weekTableBody"></tbody></table>
 </div>
 <div id="npFootnote" style="display:none;color:#ff7832;font-size:0.78rem;margin-top:8px;letter-spacing:0.5px;">* = Not pushing to win this week</div>
-<div id="shFootnote" style="display:none;color:#00e5ff;font-size:0.78rem;margin-top:4px;letter-spacing:0.5px;">&#x1F6E1;&#xFE0F; = Voluntarily helped another alliance this week</div>
+<div id="shFootnote" style="display:none;color:#00e5ff;font-size:0.78rem;margin-top:4px;letter-spacing:0.5px;">&#x1F6E1;&#xFE0F; = Voluntarily helped the server this week</div>
 </div>
 </div>
 <script>
@@ -203,7 +203,7 @@ function loadPlayer(name) {
     var rowStyle = sh ? ' style="color:' + SH_COLOR + '"' : (np ? ' style="color:' + NP_COLOR + '"' : '');
     var badges = '';
     if (w.inProgress) badges += ' <span class="in-progress-label">live</span>';
-    if (sh) badges += ' <span class="server-help-label">alliance help</span>';
+    if (sh) badges += ' <span class="server-help-label">server help</span>';
     var labelHtml = w.label + tag + badges;
     return '<tr><td' + rowStyle + '>' + labelHtml + '</td><td class="week-score"' + rowStyle + '>' + (w.score ? w.score.toLocaleString() : '-') + '</td><td class="rank-val"' + rowStyle + '>' + (w.rank || '-') + '</td><td class="' + (w.score >= 20000000 ? 'goal-yes' : 'goal-no') + '">' + (w.score >= 20000000 ? '&#9733; YES' : '&#10007; NO') + '</td></tr>';
   }).join('');

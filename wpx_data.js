@@ -372,7 +372,7 @@ async function loadWPXData() {
   }
 
   // =========================================================
-  // READ SERVER HELP SHEET (Alliance Loans)
+  // READ SERVER HELP SHEET
   // =========================================================
 
   const SERVER_HELP_SHEET = "Server Help";
