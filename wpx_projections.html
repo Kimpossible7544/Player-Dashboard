@@ -230,8 +230,8 @@ function loadPlayer(name) {
       datasets: [{
         label: 'Weekly Score',
         data: sortedWeeks.map(function (w) { return w.score || 0; }),
-        backgroundColor: sortedWeeks.map(function (w) { if (w.serverHelp) return SH_BG; if (w.pushing === false) return NP_BG; return w.score >= GOAL ? 'rgba(255,200,0,0.7)' : w.score > 0 ? 'rgba(0,180,255,0.7)' : 'rgba(42,42,58,0.5)'; }),
-        borderColor: sortedWeeks.map(function (w) { if (w.serverHelp) return SH_COLOR; if (w.pushing === false) return NP_COLOR; return w.score >= GOAL ? '#ffc800' : w.score > 0 ? '#00b4ff' : '#2a2a3a'; }),
+        backgroundColor: sortedWeeks.map(function (w) { if (w.serverHelp) return SH_BG; if (w.pushing === false) return NP_BG; return w.score >= GOAL ? 'rgba(255,100,0,0.7)' : w.score > 0 ? 'rgba(0,180,255,0.7)' : 'rgba(42,42,58,0.5)'; }),
+        borderColor: sortedWeeks.map(function (w) { if (w.serverHelp) return SH_COLOR; if (w.pushing === false) return NP_COLOR; return w.score >= GOAL ? '#ff6400' : w.score > 0 ? '#00b4ff' : '#2a2a3a'; }),
         borderWidth: 1, borderRadius: 4
       }]
     },
