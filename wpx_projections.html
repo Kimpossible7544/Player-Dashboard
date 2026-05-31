@@ -6,6 +6,8 @@
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="hammer.min.js"></script>
+<script src="chartjs-plugin-zoom.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="wpx_data.js"></script>
 <style>
@@ -46,9 +48,9 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 24px
 @media(max-width:768px){.charts-grid{grid-template-columns:1fr;}}
 .chart-card{background:var(--panel);border-radius:12px;padding:20px;border:1px solid var(--border);}
 .chart-card.full{grid-column:1/-1;}
-.chart-title{font-size:0.72rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:16px;}
-.chart-wrap{position:relative;height:260px;overflow-x:auto;}
-.chart-wrap canvas{min-width:600px;}
+.chart-title{font-size:0.72rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:4px;}
+.chart-hint{font-size:0.65rem;color:var(--dim);opacity:0.6;margin-bottom:12px;letter-spacing:0.5px;}
+.chart-wrap{position:relative;height:260px;}
 .proj-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
 .proj-table th{padding:10px 14px;text-align:left;font-size:0.7rem;letter-spacing:1px;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--border);}
 .proj-table td{padding:10px 14px;border-bottom:1px solid var(--border);}
@@ -107,9 +109,21 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 24px
 </div>
 <div class="stats-row" id="statsRow"></div>
 <div class="charts-grid">
-<div class="chart-card full"><div class="chart-title">Score History + Projection</div><div class="chart-wrap"><canvas id="projChart"></canvas></div></div>
-<div class="chart-card"><div class="chart-title">Weekly Score Breakdown</div><div class="chart-wrap"><canvas id="barChart"></canvas></div></div>
-<div class="chart-card"><div class="chart-title">Trend Analysis (3-Week Avg)</div><div class="chart-wrap"><canvas id="trendChart"></canvas></div></div>
+<div class="chart-card full">
+  <div class="chart-title">Score History + Projection</div>
+  <div class="chart-hint">Click and drag to pan &middot; Double-click to reset</div>
+  <div class="chart-wrap"><canvas id="projChart"></canvas></div>
+</div>
+<div class="chart-card">
+  <div class="chart-title">Weekly Score Breakdown</div>
+  <div class="chart-hint">Click and drag to pan &middot; Double-click to reset</div>
+  <div class="chart-wrap"><canvas id="barChart"></canvas></div>
+</div>
+<div class="chart-card">
+  <div class="chart-title">Trend Analysis (3-Week Avg)</div>
+  <div class="chart-hint">Click and drag to pan &middot; Double-click to reset</div>
+  <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+</div>
 </div>
 <div class="chart-card" style="margin-bottom:24px;"><div class="chart-title">Week by Week Breakdown</div>
 <table class="proj-table"><thead><tr><th>Week</th><th>Score</th><th>20M Goal</th><th>vs Avg</th></tr></thead>
@@ -166,6 +180,20 @@ function getTrend(weeks) {
 function fmt(n) { return n ? Math.round(n).toLocaleString() : '-'; }
 function fmtM(n) { return n ? (n / 1000000).toFixed(2) + 'M' : '-'; }
 
+var panPlugin = {
+  zoom: {
+    pan: {
+      enabled: true,
+      mode: 'x'
+    },
+    zoom: {
+      wheel: { enabled: false },
+      pinch: { enabled: false },
+      mode: 'x'
+    }
+  }
+};
+
 function loadPlayer(name) {
   var p = players[name]; if (!p) return;
   var numWeeks = parseInt(document.getElementById('projWeeks').value) || 3;
@@ -203,7 +231,11 @@ function loadPlayer(name) {
     responsive: true, maintainAspectRatio: false,
     plugins: {
       legend: { labels: { color: '#6b6b88', font: { size: 11 }, usePointStyle: true } },
-      tooltip: { backgroundColor: '#1a1a24', titleColor: '#b464ff', bodyColor: '#dcdce8', borderColor: '#2a2a3a', borderWidth: 1, callbacks: { label: function (ctx) { return ctx.dataset.label + ': ' + (ctx.raw ? (ctx.raw / 1000000).toFixed(2) + 'M' : '-'); } } }
+      tooltip: { backgroundColor: '#1a1a24', titleColor: '#b464ff', bodyColor: '#dcdce8', borderColor: '#2a2a3a', borderWidth: 1, callbacks: { label: function (ctx) { return ctx.dataset.label + ': ' + (ctx.raw ? (ctx.raw / 1000000).toFixed(2) + 'M' : '-'); } } },
+      zoom: {
+        pan: { enabled: true, mode: 'x' },
+        zoom: { wheel: { enabled: false }, pinch: { enabled: false }, mode: 'x' }
+      }
     },
     scales: {
       x: { ticks: { color: '#6b6b88', font: { size: 10 } }, grid: { color: 'rgba(42,42,58,0.5)' } },
@@ -306,11 +338,9 @@ async function init() {
     sel.innerHTML = data.playerList.sort(function (a, b) { return a.localeCompare(b, undefined, { sensitivity: 'base' }); }).map(function (name) {
       return '<option value="' + name.replace(/"/g, '&quot;') + '">' + name + '</option>';
     }).join('');
-
     document.getElementById('loadingArea').style.display = 'none';
     document.getElementById('contentArea').style.display = '';
     document.getElementById('lastUpdated').textContent = 'Data loaded \u2014 ' + new Date().toLocaleString();
-
     loadPlayer(sel.value);
     buildLeaderboard();
     document.getElementById('npFootnote').style.display = notPushingWeeks.size > 0 ? '' : 'none';
