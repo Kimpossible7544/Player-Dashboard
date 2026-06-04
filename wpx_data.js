@@ -407,9 +407,7 @@ async function loadWPXData() {
           DAYS.forEach(day => {
             const dayScore = pd[day][weekIdx];
 
-            // Count as missed if score exists (day was played/available)
-            // but is below daily goal
-            if (dayScore < DAILY_GOAL) {
+            if (dayScore > 0 && dayScore < DAILY_GOAL) {
               missedDaily++;
             }
           });
