@@ -68,6 +68,9 @@ async function loadWPXData() {
     "Friday"
   ];
 
+  const DAILY_GOAL = 6000000;
+  const WEEKLY_GOAL = 20000000;
+
   // =========================================================
   // VERIFY SHEETJS EXISTS
   // =========================================================
@@ -372,6 +375,53 @@ async function loadWPXData() {
   }
 
   // =========================================================
+  // RECALCULATE MISSED GOALS (excluding not-pushing weeks)
+  // =========================================================
+
+  Object.values(players).forEach(player => {
+
+    let missedDaily = 0;
+    let missedWeekly = 0;
+
+    player.weeks.forEach((week, i) => {
+
+      // Skip not-pushing weeks and in-progress weeks
+      if (!week.pushing || week.inProgress) return;
+
+      // Skip weeks where the player wasn't active
+      if (!week.score || week.score <= 0) return;
+
+      // Missed weekly: active pushing week with score below weekly goal
+      if (week.score < WEEKLY_GOAL) {
+        missedWeekly++;
+      }
+
+      // Missed daily: count days below daily goal in this week
+      const weekLabel = week.label;
+      const pd = dailyData.players[player.name];
+
+      if (pd) {
+        const weekIdx = dailyData.weekOrder.indexOf(weekLabel);
+
+        if (weekIdx >= 0) {
+          DAYS.forEach(day => {
+            const dayScore = pd[day][weekIdx];
+
+            // Count as missed if score exists (day was played/available)
+            // but is below daily goal
+            if (dayScore < DAILY_GOAL) {
+              missedDaily++;
+            }
+          });
+        }
+      }
+    });
+
+    player.missedDaily = missedDaily;
+    player.missedWeekly = missedWeekly;
+  });
+
+  // =========================================================
   // FINAL LOGGING
   // =========================================================
 
@@ -393,6 +443,8 @@ async function loadWPXData() {
     players,
     dailyData,
     currentWeekLabel,
-    notPushingWeeks
+    notPushingWeeks,
+    DAILY_GOAL,
+    WEEKLY_GOAL
   };
 }
