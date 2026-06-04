@@ -65,6 +65,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:16px 2
 .day-btn:hover{border-color:var(--accent);color:var(--accent);}
 .day-btn.active{background:var(--accent);color:var(--bg);border-color:var(--accent);}
 .in-progress-label{display:inline-block;font-size:0.6rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent);background:rgba(0,255,180,0.12);padding:2px 8px;border-radius:10px;margin-left:8px;vertical-align:middle;}
+.server-help-label{display:inline-block;font-size:0.6rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#00e5ff;background:rgba(0,229,255,0.12);padding:2px 8px;border-radius:10px;margin-left:8px;vertical-align:middle;}
 </style>
 </head>
 <body>
@@ -113,6 +114,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:16px 2
 <tbody id="weekTableBody"></tbody></table>
 </div>
 <div id="npFootnote" style="display:none;color:#ff7832;font-size:0.78rem;margin-top:8px;letter-spacing:0.5px;">* = Not pushing to win this week</div>
+<div id="shFootnote" style="display:none;color:#00e5ff;font-size:0.78rem;margin-top:4px;letter-spacing:0.5px;"><span style="color:#ff3264">&dagger;</span> = Voluntarily helped the server this week</div>
 </div>
 </div>
 <script>
@@ -124,6 +126,8 @@ var scoreChart = null, rankChart = null, dailyChart = null;
 var NP_COLOR = '#ff7832';
 var NP_BG = 'rgba(255,120,50,0.15)';
 var DAILY_GOAL = 6000000;
+var SH_COLOR = '#00e5ff';
+var SH_BG = 'rgba(0,229,255,0.15)';
 
 function fmt(n) { return n ? n.toLocaleString() : '-'; }
 
@@ -141,12 +145,12 @@ function loadPlayer(name) {
     '<div class="stat-card c6"><div class="stat-label">Missed Weekly</div><div class="stat-value red">' + p.missedWeekly + '</div></div>' +
     '<div class="stat-card c7"><div class="stat-label">20M Weeks</div><div class="stat-value accent">' + p.weeks.filter(function (w) { return w.score >= 20000000; }).length + '</div></div>';
 
-  var labels = p.weeks.map(function (w) { return w.pushing === false ? w.label + ' *' : w.label; });
+  var labels = p.weeks.map(function (w) { if (w.serverHelp) return w.label + ' \u2020'; return w.pushing === false ? w.label + ' *' : w.label; });
   var scores = p.weeks.map(function (w) { return w.score; });
   var ranks = p.weeks.map(function (w) { return w.rank; });
   var goal = p.weeks.map(function () { return 20000000; });
-  var pointColors = p.weeks.map(function (w) { return w.pushing === false ? NP_COLOR : '#00b4ff'; });
-  var rankPointColors = p.weeks.map(function (w) { return w.pushing === false ? NP_COLOR : '#ffc800'; });
+  var pointColors = p.weeks.map(function (w) { if (w.serverHelp) return SH_COLOR; return w.pushing === false ? NP_COLOR : '#00b4ff'; });
+  var rankPointColors = p.weeks.map(function (w) { if (w.serverHelp) return SH_COLOR; return w.pushing === false ? NP_COLOR : '#ffc800'; });
 
   if (scoreChart) scoreChart.destroy();
   if (rankChart) rankChart.destroy();
@@ -168,7 +172,7 @@ function loadPlayer(name) {
     data: {
       labels: labels,
       datasets: [
-        { label: 'Score', data: scores, borderColor: '#00b4ff', backgroundColor: 'rgba(0,180,255,0.08)', borderWidth: 2.5, pointBackgroundColor: pointColors, pointRadius: 5, tension: 0.3, segment: { borderColor: function(ctx) { var i = ctx.p0DataIndex; return (p.weeks[i] && p.weeks[i].pushing === false) || (p.weeks[i+1] && p.weeks[i+1].pushing === false) ? NP_COLOR : '#00b4ff'; } } },
+        { label: 'Score', data: scores, borderColor: '#00b4ff', backgroundColor: 'rgba(0,180,255,0.08)', borderWidth: 2.5, pointBackgroundColor: pointColors, pointRadius: 5, tension: 0.3, segment: { borderColor: function(ctx) { var i = ctx.p0DataIndex; if ((p.weeks[i] && p.weeks[i].serverHelp) || (p.weeks[i+1] && p.weeks[i+1].serverHelp)) return SH_COLOR; return (p.weeks[i] && p.weeks[i].pushing === false) || (p.weeks[i+1] && p.weeks[i+1].pushing === false) ? NP_COLOR : '#00b4ff'; } } },
         { label: '20M Goal', data: goal, borderColor: '#ff3264', borderWidth: 1.5, borderDash: [6, 4], pointRadius: 0 }
       ]
     },
@@ -194,13 +198,20 @@ function loadPlayer(name) {
 
   var tbody = document.getElementById('weekTableBody');
   tbody.innerHTML = p.weeks.map(function (w) {
-    var npTag = w.pushing === false ? ' *' : '';
-    var npStyle = w.pushing === false ? ' style="color:' + NP_COLOR + '"' : '';
-    var labelHtml = w.label + npTag + (w.inProgress ? ' <span class="in-progress-label">live</span>' : '');
-    return '<tr><td' + npStyle + '>' + labelHtml + '</td><td class="week-score"' + npStyle + '>' + (w.score ? w.score.toLocaleString() : '-') + '</td><td class="rank-val"' + npStyle + '>' + (w.rank || '-') + '</td><td class="' + (w.score >= 20000000 ? 'goal-yes' : 'goal-no') + '">' + (w.score >= 20000000 ? '&#9733; YES' : '&#10007; NO') + '</td></tr>';
+    var sh = w.serverHelp === true;
+    var np = w.pushing === false;
+    var tag = sh ? ' \u2020' : (np ? ' *' : '');
+    var rowStyle = sh ? ' style="color:' + SH_COLOR + '"' : (np ? ' style="color:' + NP_COLOR + '"' : '');
+    var badges = '';
+    if (w.inProgress) badges += ' <span class="in-progress-label">live</span>';
+    if (sh) badges += ' <span class="server-help-label">server help</span>';
+    var labelHtml = w.label + tag + badges;
+    return '<tr><td' + rowStyle + '>' + labelHtml + '</td><td class="week-score"' + rowStyle + '>' + (w.score ? w.score.toLocaleString() : '-') + '</td><td class="rank-val"' + rowStyle + '>' + (w.rank || '-') + '</td><td class="' + (w.score >= 20000000 ? 'goal-yes' : 'goal-no') + '">' + (w.score >= 20000000 ? '&#9733; YES' : '&#10007; NO') + '</td></tr>';
   }).join('');
   var hasNP = p.weeks.some(function (w) { return w.pushing === false; });
+  var hasSH = p.weeks.some(function (w) { return w.serverHelp === true; });
   document.getElementById('npFootnote').style.display = hasNP ? '' : 'none';
+  document.getElementById('shFootnote').style.display = hasSH ? '' : 'none';
 
   renderDailyChart(name, selectedDay);
 }
@@ -217,9 +228,15 @@ function selectDay(day) {
 function renderDailyChart(playerName, day) {
   if (!dailyData || !dailyData.players[playerName]) return;
   var pd = dailyData.players[playerName];
-  var scores = pd[day] || [];
-  var labels = dailyData.weekOrder.map(function (w) {
+  var allScores = pd[day] || [];
+  var recentOrder = dailyData.weekOrder.slice(-6);
+  var scores = allScores.slice(-6);
+  var p = players[playerName];
+  var shWeeks = new Set();
+  if (p) p.weeks.forEach(function (w) { if (w.serverHelp) shWeeks.add(w.label); });
+  var labels = recentOrder.map(function (w) {
     var short = w.replace(/ - .+/, '').replace(/(\w+)\s+(\d+)/, function (_, m, d) { return m.substring(0, 3) + ' ' + d; });
+    if (shWeeks.has(w)) return short + ' \u2020';
     return notPushingWeeks.has(w) ? short + ' *' : short;
   });
   var avg = scores.reduce(function (a, b) { return a + b; }, 0) / (scores.filter(function (s) { return s > 0; }).length || 1);
@@ -231,7 +248,7 @@ function renderDailyChart(playerName, day) {
     data: {
       labels: labels,
       datasets: [
-        { label: day + ' Score', data: scores, backgroundColor: scores.map(function (s, i) { var wk = dailyData.weekOrder[i]; if (notPushingWeeks.has(wk)) return NP_BG; return s >= DAILY_GOAL ? 'rgba(0,255,180,0.6)' : s > 0 ? 'rgba(0,180,255,0.5)' : 'rgba(107,107,136,0.2)'; }), borderColor: scores.map(function (s, i) { var wk = dailyData.weekOrder[i]; if (notPushingWeeks.has(wk)) return NP_COLOR; return s >= DAILY_GOAL ? '#00ffb4' : s > 0 ? '#00b4ff' : '#2a2a3a'; }), borderWidth: 1.5, borderRadius: 4 },
+        { label: day + ' Score', data: scores, backgroundColor: scores.map(function (s, i) { var wk = recentOrder[i]; if (shWeeks.has(wk)) return SH_BG; if (notPushingWeeks.has(wk)) return NP_BG; return s >= DAILY_GOAL ? 'rgba(0,255,180,0.6)' : s > 0 ? 'rgba(0,180,255,0.5)' : 'rgba(107,107,136,0.2)'; }), borderColor: scores.map(function (s, i) { var wk = recentOrder[i]; if (shWeeks.has(wk)) return SH_COLOR; if (notPushingWeeks.has(wk)) return NP_COLOR; return s >= DAILY_GOAL ? '#00ffb4' : s > 0 ? '#00b4ff' : '#2a2a3a'; }), borderWidth: 1.5, borderRadius: 4 },
         { label: 'Average', data: avgLine, type: 'line', borderColor: '#ffc800', borderWidth: 2, borderDash: [6, 4], pointRadius: 0, fill: false }
       ]
     },
@@ -260,7 +277,7 @@ async function init() {
     notPushingWeeks = data.notPushingWeeks || new Set();
     DAILY_GOAL = data.DAILY_GOAL || 6000000;
     var sel = document.getElementById('playerSelect');
-    sel.innerHTML = data.playerList.sort().map(function (name) {
+    sel.innerHTML = data.playerList.sort(function (a, b) { return a.localeCompare(b, undefined, { sensitivity: 'base' }); }).map(function (name) {
       return '<option value="' + name.replace(/"/g, '&quot;') + '">' + name + '</option>';
     }).join('');
 

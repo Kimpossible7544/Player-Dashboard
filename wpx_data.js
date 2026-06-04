@@ -287,6 +287,7 @@ async function loadWPXData() {
   // =========================================================
 
   const notPushingWeeks = new Set();
+  const serverHelpers = new Map(); // key: "PlayerName|||WeekLabel"
 
   if (workbook.SheetNames.includes(WEEK_SETTINGS_SHEET)) {
 
@@ -310,11 +311,28 @@ async function loadWPXData() {
       if (weekLabel && pushing === "N") {
         notPushingWeeks.add(String(weekLabel).trim());
       }
+
+      // Column C: comma-separated player names who helped the server
+      const helpPlayers = String(wsRows[r][2] || "").trim();
+      if (weekLabel && helpPlayers) {
+        helpPlayers.split(",").forEach(name => {
+          const trimmed = name.trim();
+          if (trimmed) {
+            const key = trimmed + "|||" + String(weekLabel).trim();
+            serverHelpers.set(key, true);
+          }
+        });
+      }
     }
 
     console.log(
       "[WPX] Not-pushing weeks:",
       Array.from(notPushingWeeks)
+    );
+
+    console.log(
+      "[WPX] Server-help entries:",
+      serverHelpers.size
     );
   }
 
@@ -406,6 +424,18 @@ async function loadWPXData() {
     });
   }
 
+  // Add serverHelp flags to player weeks
+
+  Object.values(players).forEach(player => {
+
+    player.weeks.forEach(week => {
+
+      const key = player.name + "|||" + week.label;
+      week.serverHelp = serverHelpers.has(key);
+
+    });
+  });
+
   // =========================================================
   // RECALCULATE MISSED GOALS (excluding not-pushing weeks)
   // =========================================================
@@ -474,6 +504,7 @@ async function loadWPXData() {
     dailyData,
     currentWeekLabel,
     notPushingWeeks,
+    serverHelpers,
     DAILY_GOAL,
     WEEKLY_GOAL
   };

@@ -27,7 +27,11 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 24px
 .search-bar input{background:var(--panel);border:1px solid var(--border);color:var(--text);padding:10px 16px;border-radius:8px;font-size:0.9rem;width:280px;outline:none;font-family:inherit;transition:border-color 0.2s;}
 .search-bar input:focus{border-color:var(--accent);}
 .search-bar input::placeholder{color:var(--dim);}
-.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);}
+.table-wrap{overflow-x:scroll;border-radius:12px;border:1px solid var(--border);}
+.table-wrap::-webkit-scrollbar{height:10px;}
+.table-wrap::-webkit-scrollbar-track{background:var(--panel);border-radius:0 0 12px 12px;}
+.table-wrap::-webkit-scrollbar-thumb{background:var(--dim);border-radius:5px;}
+.table-wrap::-webkit-scrollbar-thumb:hover{background:var(--accent);}
 table{width:100%;border-collapse:collapse;font-size:0.82rem;}
 thead tr{background:var(--panel);}
 th{padding:12px 14px;text-align:left;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);border-bottom:2px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;}
@@ -55,6 +59,9 @@ tbody tr:hover{background:rgba(0,255,180,0.06);cursor:pointer;}
 .empty{color:var(--border);}
 th.np-week{color:#ff7832 !important;border-bottom-color:#ff7832 !important;}
 .in-progress{font-style:italic;opacity:0.85;}
+.server-help{color:#00e5ff !important;font-family:'Courier New',monospace;position:relative;}
+.server-help .sh-icon{font-size:0.7rem;margin-left:3px;cursor:help;}
+th.sh-week{color:#00e5ff !important;border-bottom-color:#00e5ff !important;}
 th.in-progress-col{position:relative;}
 th.in-progress-col::before{content:'\25CF';color:var(--accent);margin-right:4px;font-size:0.6rem;vertical-align:middle;}
 .loading{text-align:center;padding:60px 20px;color:var(--dim);font-size:1rem;letter-spacing:1px;}
@@ -93,13 +100,16 @@ th.in-progress-col::before{content:'\25CF';color:var(--accent);margin-right:4px;
 </table>
 </div>
 <div id="npFootnote" style="display:none;color:#ff7832;font-size:0.78rem;margin-top:10px;letter-spacing:0.5px;">* = Not pushing to win this week</div>
+<div id="shFootnote" style="display:none;color:#00e5ff;font-size:0.78rem;margin-top:6px;letter-spacing:0.5px;"><span style="color:#ff3264">&dagger;</span> = Voluntarily helped the server this week (scores may be lower than usual)</div>
 </div>
 <script>
 var sortDir = {};
 var weekLabels = [];
 var notPushingWeeks = new Set();
+var serverHelpers = new Map();
 var GOAL = 20000000;
 var NP_COLOR = '#ff7832';
+var SH_COLOR = '#00e5ff';
 
 function fmt(n) {
   return n ? Math.round(n).toLocaleString() : '\u2014';
@@ -142,16 +152,20 @@ function buildRows(players, weeks) {
     var enc = encodeURIComponent(name);
     html += '<tr onclick="location.href=\'wpx_dashboard.html?player=' + enc + '\'">';
     html += '<td class="' + rankClass(p.overallRank) + '">' + (p.overallRank || '\u2014') + '</td>';
-    html += '<td class="player-name"><a href="wpx_dashboard.html?player=' + enc + '">' + p.name + '</a></td>';
+    var hasSH = p.weeks.some(function (w) { return w.serverHelp === true; });
+    html += '<td class="player-name"><a href="wpx_dashboard.html?player=' + enc + '">' + p.name + (hasSH ? '<span style="color:#ff3264;margin-left:2px;font-size:0.85em" title="Helped the server">&dagger;</span>' : '') + '</a></td>';
     html += '<td class="score">' + fmt(p.totalScore) + '</td>';
     html += '<td class="avg">' + fmt(p.weeklyAvg) + '</td>';
     html += '<td' + (p.missedDaily > 0 ? ' class="missed"' : '') + '>' + p.missedDaily + '</td>';
     html += '<td' + (p.missedWeekly > 0 ? ' class="missed"' : '') + '>' + p.missedWeekly + '</td>';
-    p.weeks.forEach(function (w) {
+    p.weeks.slice().reverse().forEach(function (w) {
       var ipCls = w.inProgress ? ' in-progress' : '';
       var np = w.pushing === false;
+      var sh = w.serverHelp === true;
       if (!w.score) {
         html += '<td class="empty' + ipCls + '">\u2014</td>';
+      } else if (sh) {
+        html += '<td class="server-help' + ipCls + '" title="Helped the server this week">' + w.score.toLocaleString() + '<span class="sh-icon" style="color:#ff3264">&dagger;</span></td>';
       } else if (np) {
         html += '<td class="' + ipCls + '" style="color:' + NP_COLOR + ';font-family:Courier New,monospace">' + w.score.toLocaleString() + '</td>';
       } else if (w.score >= GOAL) {
@@ -207,9 +221,12 @@ async function init() {
     var data = await loadWPXData();
     weekLabels = data.weekLabels;
     notPushingWeeks = data.notPushingWeeks || new Set();
-    buildHeaders(weekLabels, data.currentWeekLabel);
-    buildRows(data.players, weekLabels);
+    serverHelpers = data.serverHelpers || new Map();
+    var reversedWeeks = weekLabels.slice().reverse();
+    buildHeaders(reversedWeeks, data.currentWeekLabel);
+    buildRows(data.players, reversedWeeks);
     document.getElementById('npFootnote').style.display = notPushingWeeks.size > 0 ? '' : 'none';
+    document.getElementById('shFootnote').style.display = serverHelpers.size > 0 ? '' : 'none';
     document.getElementById('lastUpdated').textContent = 'Data loaded \u2014 ' + new Date().toLocaleString();
     sortTable(0);
   } catch (e) {
