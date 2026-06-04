@@ -68,6 +68,9 @@ async function loadWPXData() {
     "Friday"
   ];
 
+  const DAILY_GOAL = 6000000;
+  const WEEKLY_GOAL = 20000000;
+
   // =========================================================
   // VERIFY SHEETJS EXISTS
   // =========================================================
@@ -166,7 +169,24 @@ async function loadWPXData() {
   const weekTotalCols = [];
   const weekRankCols = [];
 
-  for (let c = 6; c < headers.length; c += 2) {
+  // Find first "Weekly Total" column dynamically
+  let weekStartCol = -1;
+
+  for (let c = 0; c < headers.length; c++) {
+    const h = headers[c];
+
+    if (h && typeof h === "string" &&
+        h.match(/Weekly Total \(.+\)/)) {
+      weekStartCol = c;
+      break;
+    }
+  }
+
+  if (weekStartCol < 0) {
+    throw new Error("No 'Weekly Total' columns found.");
+  }
+
+  for (let c = weekStartCol; c < headers.length; c += 2) {
 
     const h = headers[c];
 
@@ -207,6 +227,16 @@ async function loadWPXData() {
   // BUILD PLAYER OBJECTS
   // =========================================================
 
+  // Resolve summary column indices from headers
+  const colOf = (label) => headers.indexOf(label);
+  const COL_TOTAL       = colOf("Overall Total");
+  const COL_PUSH_TOTAL  = colOf("Pushing Total");
+  const COL_RANK        = colOf("Overall Rank");
+  const COL_PUSH_RANK   = colOf("Pushing Rank");
+  const COL_AVG         = colOf("Overall Weekly Average");
+  const COL_MISS_DAILY  = colOf("Overall Missed Daily Goals");
+  const COL_MISS_WEEKLY = colOf("Overall Missed Weekly Goals");
+
   const players = {};
 
   for (let r = 1; r < ptRows.length; r++) {
@@ -220,15 +250,20 @@ async function loadWPXData() {
     players[name] = {
       name,
 
-      totalScore: row[1] || 0,
+      totalScore: (COL_TOTAL >= 0 ? row[COL_TOTAL] : row[1]) || 0,
 
-      overallRank: row[2] || null,
+      pushingTotal: (COL_PUSH_TOTAL >= 0 ? row[COL_PUSH_TOTAL] : 0) || 0,
 
-      weeklyAvg: row[3] || 0,
+      overallRank: (COL_RANK >= 0 ? row[COL_RANK] : null) ||
+                   (COL_PUSH_RANK >= 0 ? row[COL_PUSH_RANK] : null),
 
-      missedDaily: row[4] || 0,
+      pushingRank: (COL_PUSH_RANK >= 0 ? row[COL_PUSH_RANK] : null),
 
-      missedWeekly: row[5] || 0,
+      weeklyAvg: (COL_AVG >= 0 ? row[COL_AVG] : row[3]) || 0,
+
+      missedDaily: (COL_MISS_DAILY >= 0 ? row[COL_MISS_DAILY] : row[4]) || 0,
+
+      missedWeekly: (COL_MISS_WEEKLY >= 0 ? row[COL_MISS_WEEKLY] : row[5]) || 0,
 
       weeks: weekTotalCols.map((col, i) => ({
         label: weekLabels[i],
@@ -402,6 +437,51 @@ async function loadWPXData() {
   });
 
   // =========================================================
+  // RECALCULATE MISSED GOALS (excluding not-pushing weeks)
+  // =========================================================
+
+  Object.values(players).forEach(player => {
+
+    let missedDaily = 0;
+    let missedWeekly = 0;
+
+    player.weeks.forEach((week, i) => {
+
+      // Skip not-pushing weeks and in-progress weeks
+      if (!week.pushing || week.inProgress) return;
+
+      // Skip weeks where the player wasn't active
+      if (!week.score || week.score <= 0) return;
+
+      // Missed weekly: active pushing week with score below weekly goal
+      if (week.score < WEEKLY_GOAL) {
+        missedWeekly++;
+      }
+
+      // Missed daily: count days below daily goal in this week
+      const weekLabel = week.label;
+      const pd = dailyData.players[player.name];
+
+      if (pd) {
+        const weekIdx = dailyData.weekOrder.indexOf(weekLabel);
+
+        if (weekIdx >= 0) {
+          DAYS.forEach(day => {
+            const dayScore = pd[day][weekIdx];
+
+            if (dayScore > 0 && dayScore < DAILY_GOAL) {
+              missedDaily++;
+            }
+          });
+        }
+      }
+    });
+
+    player.missedDaily = missedDaily;
+    player.missedWeekly = missedWeekly;
+  });
+
+  // =========================================================
   // FINAL LOGGING
   // =========================================================
 
@@ -424,6 +504,8 @@ async function loadWPXData() {
     dailyData,
     currentWeekLabel,
     notPushingWeeks,
-    serverHelpers
+    serverHelpers,
+    DAILY_GOAL,
+    WEEKLY_GOAL
   };
 }
