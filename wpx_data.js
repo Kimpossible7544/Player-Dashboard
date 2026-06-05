@@ -43,38 +43,35 @@ function isWeekComplete(weekLabel) {
   return now >= completionDate;
 }
 
+// Parses a power string like "182.6 M" or "182.6M" into a float.
+function parsePower(val) {
+  if (!val && val !== 0) return null;
+  const str = String(val).replace(/Mil/gi, "").replace(/M/gi, "").replace(/\s/g, "").trim();
+  const num = parseFloat(str);
+  return isNaN(num) ? null : num;
+}
+
 async function loadWPXData() {
 
   // =========================================================
   // DROPBOX FILE LOCATION
   // =========================================================
-  // File is hosted on Dropbox. Keep the same filename (WPXStatsFinal.xlsm)
-  // and overwrite it each week — the share link stays stable.
-  // Use dl.dropboxusercontent.com to avoid CORS errors.
-  // =========================================================
-
   const DROPBOX_URL =
     "https://dl.dropboxusercontent.com/scl/fi/dx7xgqmjshf8hciso3uya/WPXStatsFinal.xlsm" +
     "?rlkey=oyw14lm3fod48uxygykdnixar";
 
   const PLAYER_TRACKING_SHEET = "Player Tracking";
-  const WEEK_SETTINGS_SHEET = "Week Settings";
+  const WEEK_SETTINGS_SHEET   = "Week Settings";
+  const ARENA_POWER_SHEET     = "Arena Power";
 
-  const DAYS = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday"
-  ];
+  const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
-  const DAILY_GOAL = 6000000;
+  const DAILY_GOAL  = 6000000;
   const WEEKLY_GOAL = 20000000;
 
   // =========================================================
   // VERIFY SHEETJS EXISTS
   // =========================================================
-
   if (typeof XLSX === "undefined") {
     throw new Error(
       "SheetJS (XLSX) is not loaded. " +
@@ -85,17 +82,12 @@ async function loadWPXData() {
   // =========================================================
   // FETCH EXCEL FILE
   // =========================================================
-
   let response;
-
   try {
     response = await fetch(DROPBOX_URL);
   } catch (err) {
     console.error("[WPX] Fetch failed:", err);
-
-    throw new Error(
-      "Could not reach Dropbox. Details: " + err.message
-    );
+    throw new Error("Could not reach Dropbox. Details: " + err.message);
   }
 
   if (!response.ok) {
@@ -108,34 +100,23 @@ async function loadWPXData() {
   const buffer = await response.arrayBuffer();
 
   if (!buffer || buffer.byteLength < 1000) {
-    throw new Error(
-      "Downloaded file is invalid or too small."
-    );
+    throw new Error("Downloaded file is invalid or too small.");
   }
 
   // =========================================================
   // PARSE EXCEL FILE
   // =========================================================
-
   let workbook;
-
   try {
-    workbook = XLSX.read(buffer, {
-      type: "array",
-      cellDates: true
-    });
+    workbook = XLSX.read(buffer, { type: "array", cellDates: true });
   } catch (err) {
     console.error("[WPX] XLSX parse failed:", err);
-
-    throw new Error(
-      "SheetJS could not parse the Excel file: " + err.message
-    );
+    throw new Error("SheetJS could not parse the Excel file: " + err.message);
   }
 
   // =========================================================
   // VERIFY PLAYER TRACKING SHEET EXISTS
   // =========================================================
-
   if (!workbook.SheetNames.includes(PLAYER_TRACKING_SHEET)) {
     throw new Error(
       `Sheet "${PLAYER_TRACKING_SHEET}" not found.\n` +
@@ -146,13 +127,9 @@ async function loadWPXData() {
   // =========================================================
   // READ PLAYER TRACKING SHEET
   // =========================================================
-
   const ptRows = XLSX.utils.sheet_to_json(
     workbook.Sheets[PLAYER_TRACKING_SHEET],
-    {
-      header: 1,
-      defval: null
-    }
+    { header: 1, defval: null }
   );
 
   if (ptRows.length < 2) {
@@ -164,60 +141,39 @@ async function loadWPXData() {
   // =========================================================
   // PARSE WEEK COLUMNS
   // =========================================================
-
-  const weekLabels = [];
+  const weekLabels    = [];
   const weekTotalCols = [];
-  const weekRankCols = [];
+  const weekRankCols  = [];
 
-  // Find first "Weekly Total" column dynamically
   let weekStartCol = -1;
-
   for (let c = 0; c < headers.length; c++) {
     const h = headers[c];
-
-    if (h && typeof h === "string" &&
-        h.match(/Weekly Total \(.+\)/)) {
+    if (h && typeof h === "string" && h.match(/Weekly Total \(.+\)/)) {
       weekStartCol = c;
       break;
     }
   }
 
-  if (weekStartCol < 0) {
-    throw new Error("No 'Weekly Total' columns found.");
-  }
+  if (weekStartCol < 0) throw new Error("No 'Weekly Total' columns found.");
 
   for (let c = weekStartCol; c < headers.length; c += 2) {
-
     const h = headers[c];
-
     if (!h || typeof h !== "string") break;
-
     const match = h.match(/Weekly Total \((.+)\)/);
-
     if (!match) break;
-
     const label = match[1];
-
     if (!hasWeekStarted(label)) {
       console.log(`[WPX] Skipping future week: ${label}`);
       continue;
     }
-
     weekLabels.push(label);
     weekTotalCols.push(c);
     weekRankCols.push(c + 1);
   }
 
-  if (weekLabels.length === 0) {
-    throw new Error("No valid weeks found.");
-  }
+  if (weekLabels.length === 0) throw new Error("No valid weeks found.");
 
-  // Determine current in-progress week
-
-  const currentWeekLabel =
-    weekLabels.find(label => !isWeekComplete(label)) || null;
-
-  // Reverse so oldest week appears first
+  const currentWeekLabel = weekLabels.find(label => !isWeekComplete(label)) || null;
 
   weekLabels.reverse();
   weekTotalCols.reverse();
@@ -226,8 +182,6 @@ async function loadWPXData() {
   // =========================================================
   // BUILD PLAYER OBJECTS
   // =========================================================
-
-  // Resolve summary column indices from headers
   const colOf = (label) => headers.indexOf(label);
   const COL_TOTAL       = colOf("Overall Total");
   const COL_PUSH_TOTAL  = colOf("Pushing Total");
@@ -240,255 +194,230 @@ async function loadWPXData() {
   const players = {};
 
   for (let r = 1; r < ptRows.length; r++) {
-
-    const row = ptRows[r];
-
+    const row  = ptRows[r];
     const name = row[0];
-
     if (!name) continue;
 
     players[name] = {
       name,
-
-      totalScore: (COL_TOTAL >= 0 ? row[COL_TOTAL] : row[1]) || 0,
-
-      pushingTotal: (COL_PUSH_TOTAL >= 0 ? row[COL_PUSH_TOTAL] : 0) || 0,
-
-      overallRank: (COL_RANK >= 0 ? row[COL_RANK] : null) ||
-                   (COL_PUSH_RANK >= 0 ? row[COL_PUSH_RANK] : null),
-
-      pushingRank: (COL_PUSH_RANK >= 0 ? row[COL_PUSH_RANK] : null),
-
-      weeklyAvg: (COL_AVG >= 0 ? row[COL_AVG] : row[3]) || 0,
-
-      missedDaily: (COL_MISS_DAILY >= 0 ? row[COL_MISS_DAILY] : row[4]) || 0,
-
+      totalScore:   (COL_TOTAL      >= 0 ? row[COL_TOTAL]       : row[1]) || 0,
+      pushingTotal: (COL_PUSH_TOTAL  >= 0 ? row[COL_PUSH_TOTAL]  : 0)     || 0,
+      overallRank:  (COL_RANK        >= 0 ? row[COL_RANK]        : null)   ||
+                    (COL_PUSH_RANK   >= 0 ? row[COL_PUSH_RANK]   : null),
+      pushingRank:  (COL_PUSH_RANK   >= 0 ? row[COL_PUSH_RANK]   : null),
+      weeklyAvg:    (COL_AVG         >= 0 ? row[COL_AVG]         : row[3]) || 0,
+      missedDaily:  (COL_MISS_DAILY  >= 0 ? row[COL_MISS_DAILY]  : row[4]) || 0,
       missedWeekly: (COL_MISS_WEEKLY >= 0 ? row[COL_MISS_WEEKLY] : row[5]) || 0,
-
       weeks: weekTotalCols.map((col, i) => ({
-        label: weekLabels[i],
-
-        score: row[col] || 0,
-
-        rank: row[weekRankCols[i]] || null,
-
-        inProgress:
-          weekLabels[i] === currentWeekLabel
-      }))
+        label:      weekLabels[i],
+        score:      row[col]            || 0,
+        rank:       row[weekRankCols[i]] || null,
+        inProgress: weekLabels[i] === currentWeekLabel
+      })),
+      // growth populated below from Arena Power sheet
+      growth: null
     };
   }
 
-  if (Object.keys(players).length === 0) {
-    throw new Error("No player data found.");
-  }
+  if (Object.keys(players).length === 0) throw new Error("No player data found.");
 
   // =========================================================
   // READ WEEK SETTINGS SHEET
   // =========================================================
-
   const notPushingWeeks = new Set();
-  const serverHelpers = new Map(); // key: "PlayerName|||WeekLabel"
+  const serverHelpers   = new Map();
 
   if (workbook.SheetNames.includes(WEEK_SETTINGS_SHEET)) {
-
     const wsRows = XLSX.utils.sheet_to_json(
       workbook.Sheets[WEEK_SETTINGS_SHEET],
-      {
-        header: 1,
-        defval: null
-      }
+      { header: 1, defval: null }
     );
 
     for (let r = 1; r < wsRows.length; r++) {
-
       const weekLabel = wsRows[r][0];
-
-      const pushing =
-        String(wsRows[r][1] || "")
-          .trim()
-          .toUpperCase();
+      const pushing   = String(wsRows[r][1] || "").trim().toUpperCase();
 
       if (weekLabel && pushing === "N") {
         notPushingWeeks.add(String(weekLabel).trim());
       }
 
-      // Column C: comma-separated player names who helped the server
       const helpPlayers = String(wsRows[r][2] || "").trim();
       if (weekLabel && helpPlayers) {
         helpPlayers.split(",").forEach(name => {
           const trimmed = name.trim();
-          if (trimmed) {
-            const key = trimmed + "|||" + String(weekLabel).trim();
-            serverHelpers.set(key, true);
-          }
+          if (trimmed) serverHelpers.set(trimmed + "|||" + String(weekLabel).trim(), true);
         });
       }
     }
-
-    console.log(
-      "[WPX] Not-pushing weeks:",
-      Array.from(notPushingWeeks)
-    );
-
-    console.log(
-      "[WPX] Server-help entries:",
-      serverHelpers.size
-    );
   }
 
-  // Add pushing flags
-
   Object.values(players).forEach(player => {
-
     player.weeks.forEach(week => {
-
-      week.pushing =
-        !notPushingWeeks.has(week.label);
-
+      week.pushing    = !notPushingWeeks.has(week.label);
+      const key       = player.name + "|||" + week.label;
+      week.serverHelp = serverHelpers.has(key);
     });
   });
 
   // =========================================================
   // BUILD DAILY DATA
   // =========================================================
-
-  const dailyData = {
-    weekOrder: weekLabels,
-    players: {}
-  };
+  const dailyData = { weekOrder: weekLabels, players: {} };
 
   Object.keys(players).forEach(name => {
-
-    dailyData.players[name] = {
-      Monday: [],
-      Tuesday: [],
-      Wednesday: [],
-      Thursday: [],
-      Friday: []
-    };
+    dailyData.players[name] = { Monday: [], Tuesday: [], Wednesday: [], Thursday: [], Friday: [] };
   });
 
   for (const weekLabel of weekLabels) {
-
     if (!workbook.SheetNames.includes(weekLabel)) {
-
       Object.keys(players).forEach(name => {
-
-        DAYS.forEach(day => {
-          dailyData.players[name][day].push(0);
-        });
-
+        DAYS.forEach(day => dailyData.players[name][day].push(0));
       });
-
       continue;
     }
 
     const weekRows = XLSX.utils.sheet_to_json(
       workbook.Sheets[weekLabel],
-      {
-        header: 1,
-        defval: null
-      }
+      { header: 1, defval: null }
     );
 
     const byPlayer = {};
-
     for (let r = 1; r < weekRows.length; r++) {
-
-      const row = weekRows[r];
-
+      const row  = weekRows[r];
       const name = row[0];
-
       if (!name) continue;
-
       byPlayer[name] = {
-        Monday: row[2] || 0,
-        Tuesday: row[3] || 0,
+        Monday:    row[2] || 0,
+        Tuesday:   row[3] || 0,
         Wednesday: row[4] || 0,
-        Thursday: row[5] || 0,
-        Friday: row[6] || 0
+        Thursday:  row[5] || 0,
+        Friday:    row[6] || 0
       };
     }
 
     Object.keys(players).forEach(name => {
-
       const pd = byPlayer[name];
-
       DAYS.forEach(day => {
-
-        dailyData.players[name][day].push(
-          pd ? (pd[day] || 0) : 0
-        );
-
+        dailyData.players[name][day].push(pd ? (pd[day] || 0) : 0);
       });
     });
   }
 
-  // Add serverHelp flags to player weeks
-
-  Object.values(players).forEach(player => {
-
-    player.weeks.forEach(week => {
-
-      const key = player.name + "|||" + week.label;
-      week.serverHelp = serverHelpers.has(key);
-
-    });
-  });
-
   // =========================================================
-  // RECALCULATE MISSED GOALS (excluding not-pushing weeks)
+  // RECALCULATE MISSED GOALS
   // =========================================================
-
   Object.values(players).forEach(player => {
-
-    let missedDaily = 0;
-    let missedWeekly = 0;
+    let missedDaily = 0, missedWeekly = 0;
 
     player.weeks.forEach((week, i) => {
-
-      // Skip not-pushing weeks and in-progress weeks
       if (!week.pushing || week.inProgress) return;
-
-      // Skip weeks where the player wasn't active
       if (!week.score || week.score <= 0) return;
 
-      // Missed weekly: active pushing week with score below weekly goal
-      if (week.score < WEEKLY_GOAL) {
-        missedWeekly++;
-      }
+      if (week.score < WEEKLY_GOAL) missedWeekly++;
 
-      // Missed daily: count days below daily goal in this week
-      const weekLabel = week.label;
-      const pd = dailyData.players[player.name];
-
-      if (pd) {
-        const weekIdx = dailyData.weekOrder.indexOf(weekLabel);
-
-        if (weekIdx >= 0) {
-          DAYS.forEach(day => {
-            const dayScore = pd[day][weekIdx];
-
-            if (dayScore > 0 && dayScore < DAILY_GOAL) {
-              missedDaily++;
-            }
-          });
-        }
+      const pd      = dailyData.players[player.name];
+      const weekIdx = dailyData.weekOrder.indexOf(week.label);
+      if (pd && weekIdx >= 0) {
+        DAYS.forEach(day => {
+          const dayScore = pd[day][weekIdx];
+          if (dayScore > 0 && dayScore < DAILY_GOAL) missedDaily++;
+        });
       }
     });
 
-    player.missedDaily = missedDaily;
+    player.missedDaily  = missedDaily;
     player.missedWeekly = missedWeekly;
   });
 
   // =========================================================
-  // FINAL LOGGING
+  // READ ARENA POWER SHEET
+  // =========================================================
+  // Column layout (0-indexed):
+  //   0=Name, 1=Date, 2=Level, 3=Arena Power, 4=HQ Power,
+  //   5=Δ Arena session, 6=Δ HQ session,
+  //   7=Δ Arena overall, 8=Δ HQ overall,
+  //   9=Level note
+  //   History groups of 4 starting at col 10:
+  //     10=date, 11=level, 12=arena, 13=HQ, 14=date, 15=level, 16=arena, 17=HQ ...
   // =========================================================
 
-  const playerList = Object.keys(players);
+  if (workbook.SheetNames.includes(ARENA_POWER_SHEET)) {
+    const apRows = XLSX.utils.sheet_to_json(
+      workbook.Sheets[ARENA_POWER_SHEET],
+      { header: 1, defval: null }
+    );
 
+    for (let r = 1; r < apRows.length; r++) {
+      const row  = apRows[r];
+      const name = row[0];
+      if (!name) continue;
+
+      const currentArena = parsePower(row[3]);
+      const currentHQ    = parsePower(row[4]);
+      const currentLevel = row[2] || null;
+
+      // Scan history for first recorded values
+      // Arena power: cols 12, 16, 20... (start=12, step=4)
+      // HQ power:    cols 13, 17, 21... (start=13, step=4)
+      // Level:       cols 11, 15, 19... (start=11, step=4)
+      let firstArena = null;
+      let firstHQ    = null;
+      let firstLevel = null;
+
+      for (let c = 12; c < row.length; c += 4) {
+        const v = parsePower(row[c]);
+        if (v !== null) firstArena = v;
+      }
+      for (let c = 13; c < row.length; c += 4) {
+        const v = parsePower(row[c]);
+        if (v !== null) firstHQ = v;
+      }
+      for (let c = 11; c < row.length; c += 4) {
+        const v = row[c];
+        if (v !== null && v !== "") firstLevel = v;
+      }
+
+      // If no history yet, first = current
+      if (firstArena === null) firstArena = currentArena;
+      if (firstHQ    === null) firstHQ    = currentHQ;
+      if (firstLevel === null) firstLevel = currentLevel;
+
+      const growth = {
+        currentLevel,
+        currentArena,
+        currentHQ,
+        firstLevel,
+        firstArena,
+        firstHQ,
+        deltaArenaSession:  parsePower(row[5]),
+        deltaHQSession:     parsePower(row[6]),
+        deltaArenaOverall:  parsePower(row[7]),
+        deltaHQOverall:     parsePower(row[8]),
+        levelNote:          row[9] || null
+      };
+
+      // Merge into player object if name matches
+      if (players[name]) {
+        players[name].growth = growth;
+      } else {
+        // Try case-insensitive match
+        const key = Object.keys(players).find(
+          k => k.toLowerCase() === name.toLowerCase()
+        );
+        if (key) players[key].growth = growth;
+      }
+    }
+
+    console.log("[WPX] Arena Power sheet parsed.");
+  } else {
+    console.warn("[WPX] Arena Power sheet not found — growth data unavailable.");
+  }
+
+  // =========================================================
+  // FINAL LOGGING
+  // =========================================================
   console.log(
-    `[WPX] Loaded ${playerList.length} players ` +
+    `[WPX] Loaded ${Object.keys(players).length} players ` +
     `across ${weekLabels.length} weeks`,
     weekLabels
   );
@@ -496,10 +425,9 @@ async function loadWPXData() {
   // =========================================================
   // RETURN FINAL DATA
   // =========================================================
-
   return {
     weekLabels,
-    playerList,
+    playerList: Object.keys(players),
     players,
     dailyData,
     currentWeekLabel,
