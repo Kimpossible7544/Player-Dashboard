@@ -452,8 +452,9 @@ async function loadWPXData() {
       for (let s = 0; s < idCols.length; s++) {
         const id   = row[idCols[s]];
         const name = row[nameCols[s]];
-        if (id && name) {
-          idToPlayer[String(id).trim()] = String(name).trim();
+        // Skip header row and non-numeric IDs
+        if (id && name && !isNaN(Number(id))) {
+          idToPlayer[Number(id)] = String(name).trim();
         }
       }
     }
