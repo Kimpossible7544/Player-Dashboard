@@ -23,7 +23,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:16px 2
 .header h1{font-size:2rem;font-weight:900;color:var(--accent);letter-spacing:3px;text-transform:uppercase;}
 .player-select{background:var(--panel);border:1px solid var(--accent);color:var(--text);padding:10px 16px;border-radius:8px;font-size:1rem;font-weight:700;font-family:inherit;outline:none;cursor:pointer;min-width:220px;}
 .player-select option{background:var(--panel2);}
-.player-name-display{font-size:2.2rem;font-weight:900;color:var(--accent);letter-spacing:2px;margin:8px 0 24px;font-family:'Informal Roman',cursive,'Segoe UI',sans-serif;text-shadow:0 0 30px rgba(0,255,180,0.3);}
+.player-name-display{font-size:2.2rem;font-weight:900;color:var(--accent);letter-spacing:2px;margin:8px 0 4px;font-family:'Informal Roman',cursive,'Segoe UI',sans-serif;text-shadow:0 0 30px rgba(0,255,180,0.3);}
+.join-date-display{font-size:0.85rem;font-weight:600;letter-spacing:1.5px;color:var(--dim);margin-bottom:24px;font-style:italic;}
 .stats-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin-bottom:28px;}
 @media(max-width:900px){.stats-grid{grid-template-columns:repeat(4,1fr);}}
 @media(max-width:600px){.stats-grid{grid-template-columns:repeat(2,1fr);}}
@@ -137,6 +138,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:16px 2
 <div id="loadingArea" class="loading"><div class="spinner"></div><br>Loading data from Dropbox...</div>
 <div id="contentArea" style="display:none;">
 <div id="playerNameDisplay" class="player-name-display"></div>
+<div id="joinDateDisplay" class="join-date-display"></div>
 <div id="statsGrid" class="stats-grid"></div>
 <!-- Growth Since Joining -->
 <div id="growthCard" class="growth-card" style="display:none;">
@@ -307,6 +309,8 @@ function loadPlayer(name) {
   var p = players[name];
   if (!p) { document.getElementById('statsGrid').innerHTML = '<div class="no-data">No data found</div>'; return; }
   document.getElementById('playerNameDisplay').textContent = name;
+  var joinEl = document.getElementById('joinDateDisplay');
+  joinEl.textContent = p.joinDate ? 'Proud Member of WPX Since: ' + p.joinDate : '';
   var sg = document.getElementById('statsGrid');
   sg.innerHTML =
     '<div class="stat-card"><div class="stat-label">Overall Rank</div><div class="stat-value accent">' + (p.overallRank || '-') + '</div></div>' +

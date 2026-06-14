@@ -183,6 +183,7 @@ async function loadWPXData() {
   // BUILD PLAYER OBJECTS
   // =========================================================
   const colOf = (label) => headers.indexOf(label);
+  const COL_JOIN_DATE   = 1; // Column B — player join date
   const COL_TOTAL       = colOf("Overall Total");
   const COL_PUSH_TOTAL  = colOf("Pushing Total");
   const COL_RANK        = colOf("Overall Rank");
@@ -198,8 +199,19 @@ async function loadWPXData() {
     const name = row[0];
     if (!name) continue;
 
+    // Parse join date from column B
+    let joinDate = null;
+    const rawDate = row[COL_JOIN_DATE];
+    if (rawDate instanceof Date) {
+      joinDate = String(rawDate.getMonth()+1).padStart(2,"0") + "/" +
+                 String(rawDate.getDate()).padStart(2,"0") + "/" + rawDate.getFullYear();
+    } else if (rawDate) {
+      joinDate = String(rawDate);
+    }
+
     players[name] = {
       name,
+      joinDate,
       totalScore:   (COL_TOTAL      >= 0 ? row[COL_TOTAL]       : row[1]) || 0,
       pushingTotal: (COL_PUSH_TOTAL  >= 0 ? row[COL_PUSH_TOTAL]  : 0)     || 0,
       overallRank:  (COL_RANK        >= 0 ? row[COL_RANK]        : null)   ||
