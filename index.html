@@ -7,7 +7,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <style>
-:root{--bg:#0a0a0f;--panel:#111118;--accent:#00ffb4;--accent2:#00b4ff;--accent3:#b464ff;--text:#dcdce8;--dim:#6b6b88;--border:#2a2a3a;}
+:root{--bg:#0a0a0f;--panel:#111118;--accent:#00ffb4;--accent2:#00b4ff;--accent3:#b464ff;--accent4:#e74c3c;--accent5:#f39c12;--text:#dcdce8;--dim:#6b6b88;--border:#2a2a3a;}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 30% 20%,rgba(0,255,180,0.06) 0%,transparent 55%),radial-gradient(ellipse at 70% 80%,rgba(180,100,255,0.06) 0%,transparent 55%);pointer-events:none;z-index:0;}
@@ -23,6 +23,11 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .btn-dashboard:hover{background:linear-gradient(135deg,rgba(0,180,255,0.25),rgba(0,180,255,0.1));border-color:var(--accent2);box-shadow:0 8px 30px rgba(0,180,255,0.2);}
 .btn-projections{background:linear-gradient(135deg,rgba(180,100,255,0.15),rgba(180,100,255,0.05));color:var(--accent3);border-color:rgba(180,100,255,0.4);}
 .btn-projections:hover{background:linear-gradient(135deg,rgba(180,100,255,0.25),rgba(180,100,255,0.1));border-color:var(--accent3);box-shadow:0 8px 30px rgba(180,100,255,0.2);}
+.section-label{font-size:0.65rem;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--dim);margin-top:32px;margin-bottom:12px;}
+.btn-scores{background:linear-gradient(135deg,rgba(231,76,60,0.15),rgba(231,76,60,0.05));color:var(--accent4);border-color:rgba(231,76,60,0.4);}
+.btn-scores:hover{background:linear-gradient(135deg,rgba(231,76,60,0.25),rgba(231,76,60,0.1));border-color:var(--accent4);box-shadow:0 8px 30px rgba(231,76,60,0.2);}
+.btn-tyrant{background:linear-gradient(135deg,rgba(243,156,18,0.15),rgba(243,156,18,0.05));color:var(--accent5);border-color:rgba(243,156,18,0.4);}
+.btn-tyrant:hover{background:linear-gradient(135deg,rgba(243,156,18,0.25),rgba(243,156,18,0.1));border-color:var(--accent5);box-shadow:0 8px 30px rgba(243,156,18,0.2);}
 @media(max-width:500px){.logo{max-width:300px;margin-bottom:36px;}.nav-btn{padding:12px 28px;font-size:0.85rem;}}
 </style>
 </head>
@@ -33,6 +38,11 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <a href="wpx_standings.html" class="nav-btn btn-standings">Standings</a>
 <a href="wpx_dashboard.html" class="nav-btn btn-dashboard">Dashboard</a>
 <a href="wpx_projections.html" class="nav-btn btn-projections">Projections</a>
+</div>
+<div class="section-label">Tools</div>
+<div class="nav-buttons">
+<a href="https://kimpossible7544.github.io/WPX/WPX-scores.html" class="nav-btn btn-scores">Score Tracker</a>
+<a href="https://kimpossible7544.github.io/WPX/WPX-tyrant.html" class="nav-btn btn-tyrant">Tyrant Tracker</a>
 </div>
 </div>
 </body>
