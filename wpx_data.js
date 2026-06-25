@@ -299,11 +299,11 @@ async function loadWPXData() {
       const name = row[0];
       if (!name) continue;
       byPlayer[name] = {
-        Monday:    row[2] || 0,
-        Tuesday:   row[3] || 0,
-        Wednesday: row[4] || 0,
-        Thursday:  row[5] || 0,
-        Friday:    row[6] || 0
+        Monday:    (typeof row[2] === 'number' ? row[2] : 0),
+        Tuesday:   (typeof row[3] === 'number' ? row[3] : 0),
+        Wednesday: (typeof row[4] === 'number' ? row[4] : 0),
+        Thursday:  (typeof row[5] === 'number' ? row[5] : 0),
+        Friday:    (typeof row[6] === 'number' ? row[6] : 0)
       };
     }
 
