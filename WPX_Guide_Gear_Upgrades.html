@@ -108,7 +108,7 @@
   /* GEAR SLOTS */
   .gear-slots {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
     margin-bottom: 16px;
   }
@@ -370,7 +370,7 @@
   }
 
   @media(max-width:500px) {
-    .gear-slots { grid-template-columns: repeat(2, 1fr); }
+    .gear-slots { grid-template-columns: 1fr; }
     .tiers { grid-template-columns: repeat(2, 1fr); }
   }
 </style>
@@ -407,16 +407,7 @@
       <div class="slot-name">Weapon</div>
       <div class="slot-desc">Attack & Damage stats</div>
     </div>
-    <div class="gear-slot">
-      <span class="slot-icon">🧤</span>
-      <div class="slot-name">Gloves</div>
-      <div class="slot-desc">Attack & Crit stats</div>
-    </div>
-    <div class="gear-slot">
-      <span class="slot-icon">📿</span>
-      <div class="slot-name">Accessory</div>
-      <div class="slot-desc">Mixed bonus stats</div>
-    </div>
+
   </div>
 
   <div class="section-label">Quality Tiers</div>
@@ -434,12 +425,8 @@
       <p>Rare. Solid mid-game gear.</p>
     </div>
     <div class="tier t-orange">
-      <div class="tier-name">Orange</div>
-      <p>Epic. End-game target gear.</p>
-    </div>
-    <div class="tier t-gold">
-      <div class="tier-name">Gold</div>
-      <p>Legendary. Best in slot.</p>
+      <div class="tier-name">Orange / Gold</div>
+      <p>Epic & Legendary. End-game target gear — best in slot.</p>
     </div>
   </div>
 
@@ -461,8 +448,8 @@
     <div class="step">
       <div class="step-num">2</div>
       <div class="step-body">
-        <h3>Enhance Weapon and Gloves First</h3>
-        <p>Your DPS heroes (back row) benefit most from <strong>weapon and gloves upgrades</strong>. These boost attack damage which directly increases your kill speed. Prioritize these two slots on your strongest damage dealer.</p>
+        <h3>Enhance Weapon First</h3>
+        <p>Your DPS heroes (back row) benefit most from <strong>weapon upgrades</strong>. These boost attack damage which directly increases your kill speed. Prioritize this slot on your strongest damage dealer.</p>
       </div>
     </div>
     <div class="step">
@@ -475,15 +462,15 @@
     <div class="step">
       <div class="step-num">4</div>
       <div class="step-body">
-        <h3>Boots and Accessories Last</h3>
-        <p>March speed and mixed stats from boots and accessories are nice but not urgent. Fill these slots out after your core combat gear is enhanced. Exception: if a set bonus requires the accessory, prioritize completing the set.</p>
+        <h3>Boots Last</h3>
+        <p>March speed and mixed stats from boots are nice but not urgent. Fill this slot out after your core combat gear is enhanced.</p>
       </div>
     </div>
     <div class="step">
       <div class="step-num">5</div>
       <div class="step-body">
         <h3>Refine to Gold When Ready</h3>
-        <p>Once you have enhanced orange gear, you can refine pieces to <strong>gold (legendary)</strong> quality using refinement materials. This is a late-game investment — only refine gear you plan to use permanently. Never refine before you've committed to a set.</p>
+        <p>Once you have enhanced orange gear, you can refine pieces to <strong>gold</strong> quality using refinement materials. This is a late-game investment — only refine gear you plan to use permanently. Never refine before you've committed to a set.</p>
         <div class="highlight">Only refine gear you'll keep long-term</div>
       </div>
     </div>
