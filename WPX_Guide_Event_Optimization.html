@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WPX Training Guide: Event Optimization</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0c10;
+    --surface: #12161e;
+    --surface2: #1a1f2b;
+    --border: #2a3040;
+    --orange: #ff6b1a;
+    --orange-glow: rgba(255,107,26,0.15);
+    --purple: #9b59f5;
+    --purple-glow: rgba(155,89,245,0.15);
+    --blue: #3b9eff;
+    --blue-glow: rgba(59,158,255,0.15);
+    --gold: #f0c040;
+    --gold-glow: rgba(240,192,64,0.15);
+    --green: #4ecb71;
+    --green-glow: rgba(78,203,113,0.15);
+    --red: #ff4757;
+    --red-glow: rgba(255,71,87,0.15);
+    --text: #e8eaf0;
+    --muted: #7a8299;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 0 0 60px 0;
+  }
+
+  .hero {
+    background: linear-gradient(160deg, #0d1520 0%, #0a0c10 60%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 24px 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; left: 50%;
+    transform: translateX(-50%);
+    width: 500px; height: 300px;
+    background: radial-gradient(ellipse, rgba(240,192,64,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--orange);
+    border: 1px solid var(--orange);
+    padding: 4px 14px;
+    border-radius: 2px;
+    margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-family: 'Oswald', sans-serif;
+    font-size: clamp(32px, 6vw, 56px);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+  .hero h1 span { color: var(--gold); }
+  .hero p {
+    color: var(--muted);
+    font-size: 15px;
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .phoenix {
+    font-size: 64px;
+    margin-bottom: 16px;
+    display: block;
+    filter: drop-shadow(0 0 20px rgba(240,192,64,0.5));
+  }
+
+  .content {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .section-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin: 48px 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .event-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .event-card .e-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .event-card .e-info { flex: 1; }
+  .event-card .e-name {
+    font-family: 'Oswald', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #fff;
+    margin-bottom: 3px;
+  }
+  .event-card .e-freq {
+    font-size: 11px;
+    color: var(--gold);
+    font-family: 'Oswald', sans-serif;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .event-card .e-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .level-callout {
+    background: var(--surface);
+    border: 1px solid var(--gold);
+    border-radius: 8px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+  .level-callout .level-icon {
+    font-size: 48px;
+    flex-shrink: 0;
+  }
+  .level-callout h3 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--gold);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .level-callout p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .golden-hour {
+    background: linear-gradient(135deg, rgba(240,192,64,0.08), rgba(255,107,26,0.08));
+    border: 1px solid var(--gold);
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 32px;
+    text-align: center;
+  }
+  .golden-hour h3 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .golden-hour p {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.6;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  .golden-hour .gh-formula {
+    font-family: 'Oswald', sans-serif;
+    font-size: 16px;
+    color: var(--orange);
+    margin-top: 12px;
+    letter-spacing: 1px;
+  }
+
+  .rule-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .rule-card .r-icon { font-size: 24px; flex-shrink: 0; }
+  .rule-card .r-text {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .rule-card .r-text strong { color: var(--text); }
+
+  .tips {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .tip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--orange);
+    border-radius: 6px;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .tip-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+
+  .footer {
+    text-align: center;
+    margin-top: 60px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+  }
+  .footer .wpx-logo {
+    font-family: 'Oswald', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--orange);
+    text-transform: uppercase;
+  }
+  .footer p {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  @media(max-width:600px) {
+    .level-callout { flex-direction: column; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="phoenix">📅</span>
+  <div class="hero-badge">WPX Training Series</div>
+  <h1>Event <span>Optimization</span></h1>
+  <p>Maximize your rewards by aligning actions with event windows. Never waste resources outside their matching theme day.</p>
+</div>
+
+<div class="content">
+
+  <div class="golden-hour">
+    <h3>⚡ Golden Hour</h3>
+    <p>When Alliance Duel and Full Preparedness themes align at the same time, every action scores points in BOTH events simultaneously. Same resources, double rewards.</p>
+    <div class="gh-formula">Alliance Duel Theme + Full Prep Theme = 2x Value</div>
+  </div>
+
+  <div class="level-callout">
+    <span class="level-icon">📌</span>
+    <div>
+      <h3>The Core Rule</h3>
+      <p>Save all items throughout the week and deploy ONLY on the matching day. Items used outside their matching theme day score zero Alliance Duel points. This single rule separates efficient players from wasteful ones.</p>
+    </div>
+  </div>
+
+  <div class="section-label">Event Priority Ranking</div>
+  <div class="event-card">
+    <div class="e-icon">🏆</div>
+    <div class="e-info">
+      <div class="e-name">Full Preparedness</div>
+      <div class="e-freq">Daily — 3 Merit Chests</div>
+      <div class="e-desc">Complete daily at Apocalypse Time (08:00 or 20:00). Earn merit chests every day. When its theme aligns with Alliance Duel theme = Golden Hour. Never miss this.</div>
+    </div>
+  </div>
+  <div class="event-card">
+    <div class="e-icon">⚔️</div>
+    <div class="e-info">
+      <div class="e-name">Alliance Duel</div>
+      <div class="e-freq">Weekly — 6 Themed Days</div>
+      <div class="e-desc">Your main source of badges, hero fragments, and alliance rewards. Save resources all week, deploy only on matching days. Coordinate with alliance for maximum output.</div>
+    </div>
+  </div>
+  <div class="event-card">
+    <div class="e-icon">🎯</div>
+    <div class="e-info">
+      <div class="e-name">Bounty Quests</div>
+      <div class="e-freq">Daily — Refresh and Complete</div>
+      <div class="e-desc">Refresh for orange bounties. Complete daily for consistent resource income. Low effort, high reward over time.</div>
+    </div>
+  </div>
+  <div class="event-card">
+    <div class="e-icon">🦖</div>
+    <div class="e-info">
+      <div class="e-name">Tyrant Rally</div>
+      <div class="e-freq">Every 2 Days</div>
+      <div class="e-desc">Rally with alliance members. Don't solo — always coordinate. Rewards scale with participation.</div>
+    </div>
+  </div>
+  <div class="event-card">
+    <div class="e-icon">🧟</div>
+    <div class="e-info">
+      <div class="e-name">Zombie Siege</div>
+      <div class="e-freq">Monthly</div>
+      <div class="e-desc">Alliance-wide defense event. Set your strongest combat formation before the siege begins. Recall all troops home.</div>
+    </div>
+  </div>
+  <div class="event-card">
+    <div class="e-icon">🌐</div>
+    <div class="e-info">
+      <div class="e-name">State Ruler / SvS</div>
+      <div class="e-freq">Periodic</div>
+      <div class="e-desc">Server vs Server combat. Shield if not participating. Raid enemy state for points. High risk, high reward.</div>
+    </div>
+  </div>
+
+  <div class="section-label">Speed-Up Rules</div>
+  <div class="rule-card">
+    <span class="r-icon">⏱️</span>
+    <div class="r-text"><strong>Never use speed-ups randomly.</strong> Always align with the matching Alliance Duel day. Construction speed-ups → Day 2. Research speed-ups → Day 3. Training speed-ups → Day 5.</div>
+  </div>
+  <div class="rule-card">
+    <span class="r-icon">⚡</span>
+    <div class="r-text"><strong>Golden Hour doubles everything.</strong> When Full Prep theme aligns with Duel theme (typically at 08:00 and 20:00 Apocalypse Time), deploy your biggest speed-ups here for 2x rewards.</div>
+  </div>
+  <div class="rule-card">
+    <span class="r-icon">📊</span>
+    <div class="r-text"><strong>150% construction buff is the sweet spot.</strong> Diminishing returns kick in after this. Don't chase higher buffs — they're inefficient.</div>
+  </div>
+  <div class="rule-card">
+    <span class="r-icon">🏗️</span>
+    <div class="r-text"><strong>Save for big upgrades.</strong> HQ, Laboratory, and Troop Camps benefit most from speed-ups. Don't waste them on low-level buildings.</div>
+  </div>
+
+  <div class="section-label">Weekly Save Schedule</div>
+  <div class="tips">
+    <div class="tip">
+      <span class="tip-icon">🔧</span>
+      <span><strong style="color:#ff6b1a;">Day 1 — Vehicle:</strong> Save all golden wrenches, blueprints, and chip chests throughout the week. Open everything on this day only.</span>
+    </div>
+    <div class="tip">
+      <span class="tip-icon">🏗️</span>
+      <span><strong style="color:#ff6b1a;">Day 2 — Building:</strong> Stockpile construction speed-ups and orange refugees. Queue your biggest building upgrades to complete today.</span>
+    </div>
+    <div class="tip">
+      <span class="tip-icon">🔬</span>
+      <span><strong style="color:#ff6b1a;">Day 3 — Research:</strong> Use research speed-ups and badges. Start high-cost research mid-week so it finishes today. Prioritize orange trade trucks.</span>
+    </div>
+    <div class="tip">
+      <span class="tip-icon">🦸</span>
+      <span><strong style="color:#ff6b1a;">Day 4 — Heroes:</strong> Use hero fragments, cores, and skill books. Save Club recruitment tickets for this day.</span>
+    </div>
+    <div class="tip">
+      <span class="tip-icon">🪖</span>
+      <span><strong style="color:#ff6b1a;">Day 5 — Training:</strong> Mass troop production. Use all training speed-ups. Queue as many troop batches as possible.</span>
+    </div>
+    <div class="tip">
+      <span class="tip-icon">💥</span>
+      <span><strong style="color:#ff6b1a;">Day 6 — Combat:</strong> Kill enemies, complete bounty missions, attack rival bases. Stack all combat actions here.</span>
+    </div>
+  </div>
+
+  <div class="section-label">Coordination Tips</div>
+  <div class="tips">
+    <div class="tip">
+      <span class="tip-icon">📢</span>
+      <span><strong style="color:#f0c040;">Pre-Week Message:</strong> Post the 6-day theme schedule in alliance chat before the week starts. Members who know the schedule save the right resources.</span>
+    </div>
+    <div class="tip">
+      <span class="tip-icon">⏰</span>
+      <span><strong style="color:#f0c040;">Golden Hour Alerts:</strong> When Full Prep aligns with the Duel day, announce the exact Apocalypse Time in chat. This one message is the highest-ROI coordination action.</span>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="wpx-logo">⚔️ WPX ⚔️</div>
+    <p>Warrior Phoenix Alliance — Training Series</p>
+    <p style="margin-top:12px; font-size:13px; color:var(--orange); font-family:'Oswald',sans-serif; letter-spacing:2px; text-transform:uppercase;">Created by Kimpossible7544</p>
+  </div>
+
+</div>
+</body>
+</html>
