@@ -11,17 +11,18 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 30% 20%,rgba(255,107,26,0.06) 0%,transparent 55%),radial-gradient(ellipse at 70% 80%,rgba(155,89,245,0.06) 0%,transparent 55%);pointer-events:none;z-index:0;}
-.page{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;text-align:center;padding:40px 20px;max-width:600px;width:100%;}
+.page{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;text-align:center;padding:40px 20px;max-width:900px;width:100%;}
 .back-link{font-size:0.75rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;text-decoration:none;color:var(--dim);margin-bottom:32px;transition:color 0.3s;}
 .back-link:hover{color:var(--text);}
 h1{font-size:1.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .subtitle{font-size:0.8rem;color:var(--dim);letter-spacing:1px;margin-bottom:40px;}
-.guides{display:flex;flex-direction:column;gap:16px;width:100%;}
+.guides{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;width:100%;}
 .guide-card{display:block;padding:24px;border-radius:12px;border:1px solid var(--border);background:var(--panel);text-decoration:none;color:var(--text);transition:all 0.3s;text-align:left;}
 .guide-card:hover{transform:translateY(-2px);border-color:rgba(255,107,26,0.4);box-shadow:0 8px 30px rgba(255,107,26,0.1);}
 .guide-title{font-size:1.1rem;font-weight:700;margin-bottom:6px;color:var(--accent);}
 .guide-desc{font-size:0.85rem;color:var(--dim);line-height:1.5;}
-@media(max-width:500px){h1{font-size:1.3rem;}.guide-card{padding:18px;}}
+@media(max-width:768px){.guides{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:500px){h1{font-size:1.3rem;}.guides{grid-template-columns:1fr;}.guide-card{padding:18px;}}
 </style>
 </head>
 <body>
