@@ -132,8 +132,8 @@
     overflow: hidden;
   }
   .tier.gold { border-color: var(--gold); background: var(--gold-glow); }
+  .tier.purple { border-color: var(--purple); background: var(--purple-glow); }
   .tier.blue { border-color: var(--blue); background: var(--blue-glow); }
-  .tier.red { border-color: var(--red); background: var(--red-glow); }
   .tier-gem {
     font-size: 36px;
     display: block;
@@ -148,8 +148,8 @@
     margin-bottom: 6px;
   }
   .tier.gold .tier-name { color: var(--gold); }
+  .tier.purple .tier-name { color: var(--purple); }
   .tier.blue .tier-name { color: var(--blue); }
-  .tier.red .tier-name { color: var(--red); }
   .tier p {
     font-size: 12px;
     color: var(--muted);
@@ -221,8 +221,8 @@
     flex-shrink: 0;
   }
   .badge-s { background: var(--gold-glow); border: 1px solid var(--gold); color: var(--gold); }
-  .badge-a { background: var(--blue-glow); border: 1px solid var(--blue); color: var(--blue); }
-  .badge-b { background: var(--red-glow); border: 1px solid var(--red); color: var(--red); }
+  .badge-a { background: var(--purple-glow); border: 1px solid var(--purple); color: var(--purple); }
+  .badge-b { background: var(--blue-glow); border: 1px solid var(--blue); color: var(--blue); }
 
   .level-callout {
     background: var(--surface);
@@ -382,17 +382,17 @@
     <div class="tier gold">
       <span class="tier-best">Best</span>
       <span class="tier-gem">👑</span>
-      <div class="tier-name">S-Rank</div>
+      <div class="tier-name">S+ Rank</div>
       <p>Strongest heroes. Invest everything here. Hard to obtain but game-changing.</p>
     </div>
-    <div class="tier blue">
+    <div class="tier purple">
       <span class="tier-gem">⭐</span>
-      <div class="tier-name">A-Rank</div>
-      <p>Solid heroes. Great for F2P players. Worth full investment if no S-Rank available.</p>
+      <div class="tier-name">A+ Rank</div>
+      <p>Solid heroes. Great for F2P players. Worth full investment if no S+ Rank available.</p>
     </div>
-    <div class="tier red">
+    <div class="tier blue">
       <span class="tier-gem">💀</span>
-      <div class="tier-name">B-Rank</div>
+      <div class="tier-name">B</div>
       <p>Tutorial heroes only. Do NOT invest EXP, skill books, or cores into these.</p>
     </div>
   </div>
@@ -400,12 +400,12 @@
   <div class="level-callout">
     <span class="level-icon">🚫</span>
     <div>
-      <h3>Never Invest in B-Rank Heroes</h3>
-      <p>Angelina and William are B-Rank tutorial heroes. They seem decent early on, but they fall off hard. Every resource you put into them is wasted. Save your EXP, skill books, and power cores for A-Rank and S-Rank heroes only.</p>
+      <h3>Never Invest in B Heroes</h3>
+      <p>Angelina and William are B tutorial heroes. They seem decent early on, but they fall off hard. Every resource you put into them is wasted. Save your EXP, skill books, and power cores for A+ Rank and S+ Rank heroes only.</p>
     </div>
   </div>
 
-  <div class="section-label">S-Rank Heroes — Top Priority</div>
+  <div class="section-label">S+ Rank Heroes — Top Priority</div>
   <div class="hero-list">
     <div class="hero-card">
       <div class="icon">🔥</div>
@@ -413,7 +413,7 @@
         <div class="name">Katrina — Sheriff</div>
         <div class="desc">Blood Rose faction. Free at Stage 14. One of the best F2P heroes. Invest immediately.</div>
       </div>
-      <span class="badge-tag badge-s">S-Rank</span>
+      <span class="badge-tag badge-s">S+</span>
     </div>
     <div class="hero-card">
       <div class="icon">👸</div>
@@ -421,7 +421,7 @@
         <div class="name">Sophia — Princess</div>
         <div class="desc">Blood Rose faction. Available for $1 at Stage 5. Exceptional damage + support combo.</div>
       </div>
-      <span class="badge-tag badge-s">S-Rank</span>
+      <span class="badge-tag badge-s">S+</span>
     </div>
     <div class="hero-card">
       <div class="icon">🏹</div>
@@ -429,7 +429,7 @@
         <div class="name">Laura — Hunter</div>
         <div class="desc">Wings of Dawn faction. Strong shooter synergy. Great for WoD formations.</div>
       </div>
-      <span class="badge-tag badge-s">S-Rank</span>
+      <span class="badge-tag badge-s">S+</span>
     </div>
     <div class="hero-card">
       <div class="icon">👑</div>
@@ -437,7 +437,7 @@
         <div class="name">Queenie — Season 4</div>
         <div class="desc">Wings of Dawn. Season 4's most powerful hero. Massive damage scaling.</div>
       </div>
-      <span class="badge-tag badge-s">S-Rank</span>
+      <span class="badge-tag badge-s">S+</span>
     </div>
     <div class="hero-card">
       <div class="icon">⚔️</div>
@@ -445,11 +445,11 @@
         <div class="name">Yu Chan</div>
         <div class="desc">Guard of Order. Top PvP hero. +10% damage to shooters, -10% from assaulters.</div>
       </div>
-      <span class="badge-tag badge-s">S-Rank</span>
+      <span class="badge-tag badge-s">S+</span>
     </div>
   </div>
 
-  <div class="section-label">A-Rank Heroes — Solid Choices</div>
+  <div class="section-label">A+ Rank Heroes — Solid Choices</div>
   <div class="hero-list">
     <div class="hero-card">
       <div class="icon">📖</div>
@@ -457,7 +457,7 @@
         <div class="name">Ava — Scholar</div>
         <div class="desc">Blood Rose. Reliable support with balanced playstyle. Great team glue.</div>
       </div>
-      <span class="badge-tag badge-a">A-Rank</span>
+      <span class="badge-tag badge-a">A+</span>
     </div>
     <div class="hero-card">
       <div class="icon">🎰</div>
@@ -465,7 +465,7 @@
         <div class="name">Vivian — Lucky Dealer</div>
         <div class="desc">Blood Rose. Good damage + utility. Pairs well with Katrina or Sophia.</div>
       </div>
-      <span class="badge-tag badge-a">A-Rank</span>
+      <span class="badge-tag badge-a">A+</span>
     </div>
     <div class="hero-card">
       <div class="icon">🕷️</div>
@@ -473,7 +473,7 @@
         <div class="name">Isabella — Black Widow</div>
         <div class="desc">Wings of Dawn. Adds flexibility for shooter formations with survivability.</div>
       </div>
-      <span class="badge-tag badge-a">A-Rank</span>
+      <span class="badge-tag badge-a">A+</span>
     </div>
     <div class="hero-card">
       <div class="icon">🔥</div>
@@ -481,7 +481,7 @@
         <div class="name">Fiona — Firehawk</div>
         <div class="desc">Wings of Dawn. Consistent offensive fighter for shooter-oriented gameplay.</div>
       </div>
-      <span class="badge-tag badge-a">A-Rank</span>
+      <span class="badge-tag badge-a">A+</span>
     </div>
   </div>
 
@@ -529,7 +529,7 @@
   <div class="tips">
     <div class="tip">
       <span class="tip-icon">🎯</span>
-      <span><strong style="color:#ff6b1a;">F2P Priority:</strong> Focus on Blood Rose (Katrina, Sophia) or Wings of Dawn (Laura, Fiona). These factions have the most accessible S/A-Rank heroes for free players.</span>
+      <span><strong style="color:#ff6b1a;">F2P Priority:</strong> Focus on Blood Rose (Katrina, Sophia) or Wings of Dawn (Laura, Fiona). These factions have the most accessible S+/A+ Rank heroes for free players.</span>
     </div>
     <div class="tip">
       <span class="tip-icon">⚠️</span>
@@ -539,9 +539,57 @@
       <span class="tip-icon">💡</span>
       <span><strong style="color:#ff6b1a;">Stage 5 Sophia:</strong> The $1 Sophia offer at Stage 5 is the single best purchase in the game. If you spend any money at all, buy this.</span>
     </div>
+
+  </div>
+
+  <div class="section-label">Best Purchases for Low-Spending Players</div>
+  <div class="callout" style="border-left:4px solid #f0c040; background:rgba(240,192,64,0.08);">
+    <h3 style="color:#f0c040;">💰 Spending Smart — Maximum Value for Minimum Cost</h3>
+    <p>If you're going to spend a little, these are the purchases that give you the biggest advantage. Listed in order of priority:</p>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h3>Stage 5 Sophia Offer — $1</h3>
+        <p>The single best purchase in the game. Unlocks Sophia early, who is an S+ Rank hero. This alone can carry your entire early game.</p>
+        <div class="highlight">Best value in the entire game — do not skip this</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h3>Monthly Supply Card — ~$5</h3>
+        <p>Gives daily diamonds and speed-ups for 30 days. Over a month, this adds up to far more value than any single gem pack. Consistent daily income accelerates everything.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h3>Growth Fund — ~$10</h3>
+        <p>One-time purchase that pays out diamonds as you reach HQ milestones. The total payout far exceeds the cost. Buy early so you collect rewards as you progress.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h3>Second Builder Queue — Diamonds</h3>
+        <p>Not a direct purchase, but use your earned diamonds to unlock the second builder. Having two buildings upgrade simultaneously doubles your progression speed.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <h3>Event-Only Bundles</h3>
+        <p>Wait for special event packs that include hero fragments, speed-ups, and resources. These rotate and offer 3-5x the value of standard store packs. Never buy standard diamond packs.</p>
+        <div class="highlight">Standard store packs are a trap — always wait for event bundles</div>
+      </div>
+    </div>
+  </div>
+  <div class="tips">
     <div class="tip">
-      <span class="tip-icon">🔄</span>
-      <span><strong style="color:#ff6b1a;">Rerolling:</strong> If your Club pulls give you mostly B-Rank heroes, don't be discouraged. Katrina is free at Stage 14 and she's S-Rank. Keep pushing forward.</span>
+      <span class="tip-icon">🚫</span>
+      <span><strong style="color:#ff6b1a;">Avoid:</strong> Random gem packs, gacha hero pulls (outside events), VIP point bundles, and any "limited time" pack that doesn't include hero fragments or speed-ups. These drain money with minimal return.</span>
     </div>
   </div>
 
