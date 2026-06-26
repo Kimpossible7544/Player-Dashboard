@@ -338,6 +338,21 @@
   }
   .tip-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
 
+  .back-link {
+    display: inline-block;
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--muted);
+    margin-bottom: 16px;
+    transition: color 0.3s;
+  }
+  .back-link:hover { color: var(--orange); }
+
+
   .footer {
     text-align: center;
     margin-top: 60px;
@@ -369,6 +384,7 @@
 <body>
 
 <div class="hero">
+  <a href="wpx_training.html" class="back-link">&larr; Back to Training</a>
   <span class="phoenix">🦸</span>
   <div class="hero-badge">WPX Training Series</div>
   <h1>Hero <span>Investment</span> Guide</h1>
