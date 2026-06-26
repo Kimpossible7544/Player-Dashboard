@@ -410,10 +410,20 @@ function renderDailyChart(playerName, day) {
   var p = players[playerName];
   var shWeeks = new Set();
   if (p) p.weeks.forEach(function (w) { if (w.serverHelp) shWeeks.add(w.label); });
+  var dayOffsets = { Monday: 0, Tuesday: 1, Wednesday: 2, Thursday: 3, Friday: 4 };
   var labels = recentOrder.map(function (w) {
-    var short = w.replace(/ - .+/, '').replace(/(\w+)\s+(\d+)/, function (_, m, d) { return m.substring(0, 3) + ' ' + d; });
-    if (shWeeks.has(w)) return short + ' \u2020';
-    return notPushingWeeks.has(w) ? short + ' *' : short;
+    var startPart = w.replace(/ - .+/, '').trim();
+    var dayDate = startPart;
+    var parsed = new Date(startPart + ', ' + new Date().getFullYear());
+    if (!isNaN(parsed.getTime())) {
+      var offset = dayOffsets[day] || 0;
+      var actualDate = new Date(parsed);
+      actualDate.setDate(actualDate.getDate() + offset);
+      var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      dayDate = months[actualDate.getMonth()] + ' ' + actualDate.getDate();
+    }
+    if (shWeeks.has(w)) return dayDate + ' \u2020';
+    return notPushingWeeks.has(w) ? dayDate + ' *' : dayDate;
   });
   var avg = scores.reduce(function (a, b) { return a + b; }, 0) / (scores.filter(function (s) { return s > 0; }).length || 1);
   var avgLine = scores.map(function () { return avg; });
