@@ -48,9 +48,19 @@ The WPX Player Dashboard is a static site with 3 pages that fetch and render dat
 - If data fails to load, an error message appears instead
 - Check browser console for JavaScript errors during page load
 
+## Login (wpx_dashboard.html)
+
+- The Dashboard gates content behind a login (`doLogin()` in `wpx_dashboard.html`). `MASTER_PASSWORD` (a const near the top of the inline script) unlocks the full "master" view with the player dropdown.
+- Login requires data to be loaded first — `doLogin()` returns "Still loading data" until the Dropbox fetch completes, so wait for the "Data loaded" timestamp before entering credentials.
+- Historically the login ALSO accepted any valid roster player ID (locking to that one player). If testing a change that restricts/removes ID login, you need a REAL roster ID to prove the regression — a random number is rejected under both old and new code. Get a real ID by downloading the workbook and reading the `Roster` sheet: IDs are in columns A/E/I/M (0,4,8,12), names in B/F/J/N (1,5,9,13). Example:
+  ```bash
+  curl -sL "<DROPBOX_URL from wpx_data.js>" -o /tmp/wpx.xlsm
+  pip3 install openpyxl && python3 -c "import openpyxl; wb=openpyxl.load_workbook('/tmp/wpx.xlsm',data_only=True); ws=wb['Roster']; print([(r[0],r[1]) for r in ws.iter_rows(min_row=2,values_only=True) if r[0] and str(r[0]).replace('.0','').isdigit()][:5])"
+  ```
+
 ## Tips
 
 - The Dropbox URL may change if the user re-uploads the file. If data fails to load, check `wpx_data.js` for the current URL.
 - The pages use Chart.js for rendering charts — x-axis labels are derived from the `weekLabels` array in `wpx_data.js`
-- No authentication is required; this is a fully static site
+- The data pages are static + client-side; the Dashboard adds a client-side password gate (see Login section). There is no server-side auth.
 - All pages share the same data source (`wpx_data.js`), so a fix in the data layer affects all pages simultaneously
